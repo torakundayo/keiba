@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { InfoIcon } from 'lucide-react'
+import { Slider } from "@/components/ui/slider"
+import { Calculator, RefreshCcw, ChevronRight, Info, X, Check} from 'lucide-react'
+import { TbHorse } from "react-icons/tb";
 import {
   Tooltip,
   TooltipContent,
@@ -30,7 +32,7 @@ function combinations<T>(array: T[], r: number): T[][] {
     }
     for (let i = start; i < array.length; i++) {
       combo.push(array[i])
-      recurse(i+1, combo)
+      recurse(i + 1, combo)
       combo.pop()
     }
   }
@@ -73,9 +75,9 @@ export default function TrifectaReturnCalculator() {
 
   const calculateResults = () => {
     if (typeof totalHorses === "number") {
-      const includedIndices = stakes.map((s,i)=>({s,i}))
+      const includedIndices = stakes.map((s, i) => ({ s, i }))
         .filter(obj => obj.s >= 100)
-        .map(obj=>obj.i)
+        .map(obj => obj.i)
 
       if (includedIndices.length < 3) {
         setResults(null)
@@ -87,8 +89,8 @@ export default function TrifectaReturnCalculator() {
 
       // p_i_raw = 0.8 / O_i
       const p_raw = includedOdds.map(o => 0.8 / o)
-      const sum_p_raw = p_raw.reduce((acc,v)=>acc+v,0)
-      const p_norm = p_raw.map(v => v/sum_p_raw) // 正規化
+      const sum_p_raw = p_raw.reduce((acc, v) => acc + v, 0)
+      const p_norm = p_raw.map(v => v / sum_p_raw) // 正規化
 
       const combosStakes = combinations(includedStakes, 3)
       const combosOdds = combinations(includedOdds, 3)      // 単勝オッズ(オリジナル)で難易度計算用
@@ -110,7 +112,7 @@ export default function TrifectaReturnCalculator() {
         const comboOddsSet = combosOdds[c]
         const comboP = combosPnorm[c]
         const horses = includedIndices.filter((_, idx) =>
-          combinations(Array.from({length: includedIndices.length}, (_, i) => i), 3)[c].includes(idx)
+          combinations(Array.from({ length: includedIndices.length }, (_, i) => i), 3)[c].includes(idx)
         )
 
         const P_ijk = comboP.reduce((prod, p) => prod * p, 1)
@@ -173,106 +175,136 @@ export default function TrifectaReturnCalculator() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50 p-6 md:p-12">
       <div className="mx-auto max-w-5xl">
-        <h1 className="mb-12 text-center text-5xl font-bold bg-gradient-to-r from-blue-600 to-blue-800
-          bg-clip-text text-transparent hover:scale-105 transform transition-all duration-300">
-          3連複期待リターン計算ツール
-        </h1>
-
+        <div className="relative mb-8 text-center">
+          <h1 className="mb-12 text-center text-5xl font-bold bg-gradient-to-r from-blue-600 to-blue-800
+            bg-clip-text text-transparent hover:scale-105 transform transition-all duration-300">
+            3連複期待リターン計算ツール
+          </h1>
+          <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-32 h-1
+              bg-gradient-to-r from-transparent via-blue-500 to-transparent"></div>
+          </div>
         <Card className="mb-10 shadow-xl hover:shadow-2xl transition-all duration-300 border border-blue-100">
           <CardHeader className="bg-gradient-to-r from-blue-50 via-white to-blue-50 py-8">
             <CardTitle className="flex items-center space-x-3 text-2xl text-blue-800">
-              <span>このツールの目的</span>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger className="hover:scale-110 transition-transform duration-200">
-                    <InfoIcon className="h-5 w-5 text-blue-400" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs bg-blue-900 text-white p-2 rounded-lg">
-                    単勝オッズから確率を近似し、3連複オッズを推定。<br/>
-                    オッズ積逆数D_combで加重平均して難易度加重期待リターンを求めます。
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <TbHorse className="h-8 w-8 text-blue-600" />
+              <span className="relative group">
+                このツールの目的
+                <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-blue-300 transform
+                  scale-x-0 transition-transform duration-300 group-hover:scale-x-100"></div>
+              </span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6 p-8 bg-white">
-          <p className="text-gray-700 text-lg leading-relaxed">
-            このツールでは、掛け金100円以上を設定した馬で3連複を組み、単勝オッズから確率指標を算出します。<br />
-            全馬について正規化を行い確率分布を生成、その確率を基に3連複確率を求めます。<br />
-            さらに3連複確率から3連複オッズ近似を計算し、期待リターンを算出します。<br />
-            最終的に、選択した馬券の組み合わせについて、「当たりやすさ」を考慮した加重平均期待リターンを提供します。
-          </p>
-          <div className="rounded-lg bg-blue-50 p-4 space-y-2">
-            <p>
-              このツールの主な目的は、複数の馬券を比較したり、期待されるリターンを評価するための客観的な指標を提供することです。
-            </p>
-            <p className="text-gray-600">
-              理論モデルに基づく計算結果を参考にして、実際の馬券購入に役立ててください。
-            </p>
-          </div>
+          <CardContent className="p-8">
+            <div className="grid gap-8 md:grid-cols-2">
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-blue-800">使い方</h3>
+                <div className="rounded-xl bg-gradient-to-br from-blue-50 to-white p-6 shadow-sm">
+                  <ol className="list-decimal list-inside space-y-3 text-gray-700">
+                    <li>出走頭数を入力（10～18頭）</li>
+                    <li>各馬の重み（100円単位）とオッズを設定</li>
+                    <li>計算ボタンで期待リターンを確認</li>
+                  </ol>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-blue-800">特徴</h3>
+                <div className="rounded-xl bg-gradient-to-br from-slate-50 to-white p-6 shadow-sm">
+                  <ul className="list-disc list-inside space-y-3 text-gray-700">
+                    <li>単勝オッズから3連複を予測</li>
+                    <li>当たりやすさを考慮した期待値計算</li>
+                    <li>複数の組み合わせを一括評価</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="mb-10 shadow-xl hover:shadow-2xl transition-all duration-300 border border-blue-100">
-          <CardHeader className="bg-gradient-to-r from-blue-50 via-white to-blue-50 py-8 border-b border-blue-100">
-            <CardTitle className="text-2xl text-blue-800">
-              {step === 0 ? "Step 1: 出走頭数入力" : "Step 2: 各馬の重み・オッズ設定"}
+        <Card className="mb-10 shadow-2xl hover:shadow-3xl transition-all duration-500
+          border-0 bg-white/90 backdrop-blur-sm">
+          <CardHeader className="bg-gradient-to-r from-slate-50/50 via-white to-blue-50/50
+            py-8 border-b border-blue-100/50">
+            <CardTitle className="text-2xl text-blue-900 flex items-center gap-4">
+              <Calculator className="h-7 w-7 text-blue-600" />
+              <span>{step === 0 ? "Step 1: 出走頭数入力" : "Step 2: 各馬の設定"}</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-8 bg-white">
+          <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               {step === 0 ? (
-                <div className="space-y-4">
-                  <Label htmlFor="total-horses" className="text-lg font-medium">
-                    出走頭数（10～18）
+                <div className="space-y-6">
+                  <Label className="text-lg font-medium text-blue-900 block mb-4">
+                    出走頭数: {totalHorses}頭
                   </Label>
-                  <div className="flex items-center space-x-4">
-                    <Input
-                      id="total-horses"
-                      type="number"
+                  <div className="max-w-lg mx-auto px-8">
+                    <Slider
+                      value={[totalHorses || 10]}
+                      onValueChange={(value) => setTotalHorses(value[0])}
                       min={10}
                       max={18}
-                      value={totalHorses}
-                      onChange={handleTotalHorsesChange}
-                      className="max-w-[200px] text-lg shadow-sm hover:shadow transition-shadow duration-200"
-                      required
+                      step={1}
+                      className="my-6"
                     />
-                    <span className="text-sm text-gray-500 animate-pulse">※10頭～18頭</span>
                   </div>
+                  <p className="text-sm text-blue-500 text-center">
+                    ※10頭～18頭で設定してください
+                  </p>
                 </div>
               ) : (
-                <div className="space-y-6">
-                  <p className="text-lg font-medium">
-                    出走頭数: {totalHorses}頭<br/>
-                    重みは0で除外、100以上で選択となります。<br/>
-                    単勝オッズは小数点第一位まで入力してください。
-                  </p>
+                <div className="space-y-8">
+                  <div className="bg-gradient-to-r from-blue-50 to-slate-50 rounded-xl p-6
+                    border border-blue-100/50">
+                    <div className="flex items-center justify-between">
+                      <p className="text-lg font-medium text-blue-900">
+                        出走頭数: {totalHorses}頭
+                      </p>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="h-5 w-5 text-blue-400" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>重みは100単位で設定してください</p>
+                            <p>0円は除外扱いとなります</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </div>
+
                   {typeof totalHorses === "number" && totalHorses > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                      {Array.from({length: totalHorses}).map((_, i) => (
-                        <div key={i} className="p-4 border rounded-lg hover:bg-blue-50 transition space-y-3">
-                          <p className="font-medium">{i+1}番</p>
-                          <div className="space-y-1">
-                            <Label>重み</Label>
-                            <Input
-                              type="number"
-                              min={0}
-                              step={100}
-                              value={stakes[i] || 0}
-                              onChange={(e) => handleStakeChange(i, parseInt(e.target.value) || 0)}
-                              className="w-full"
-                            />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {Array.from({ length: totalHorses }).map((_, i) => (
+                        <div key={i}
+                          className="group relative p-6 rounded-xl bg-gradient-to-br from-white to-slate-50
+                            border border-blue-100/50 hover:border-blue-200 transition-all duration-300
+                            hover:shadow-lg transform hover:-translate-y-1">
+                          <div className="absolute top-2 right-2 text-2xl font-bold text-blue-900/20">
+                            {i + 1}
                           </div>
-                          <div className="space-y-1">
-                            <Label>単勝オッズ</Label>
-                            <Input
-                              type="number"
-                              min={1.0}
-                              step={0.1}
-                              value={odds[i] || 1.0}
-                              onChange={(e) => handleOddChange(i, parseFloat(e.target.value) || 1.0)}
-                              className="w-full"
-                            />
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label className="text-gray-600">重み（100単位）</Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                step={100}
+                                value={stakes[i] || 0}
+                                onChange={(e) => handleStakeChange(i, parseInt(e.target.value) || 0)}
+                                className="w-full shadow-sm group-hover:shadow transition-all duration-300"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-gray-600">単勝オッズ</Label>
+                              <Input
+                                type="number"
+                                min={1.0}
+                                step={0.1}
+                                value={odds[i] || 1.0}
+                                onChange={(e) => handleOddChange(i, parseFloat(e.target.value) || 1.0)}
+                                className="w-full shadow-sm group-hover:shadow transition-all duration-300"
+                              />
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -423,7 +455,7 @@ export default function TrifectaReturnCalculator() {
                   <BlockMath math="\text{難易度加重期待リターン} = \frac{\sum (\text{期待リターン} \times D_{\text{comb}})}{\sum D_{\text{comb}}}" />
                   <p>
                     <BlockMath math="D_{\text{comb}} = \frac{1}{O_1 \times O_2 \times O_3}" />
-                    当たりやすい組み合わせほ�� <InlineMath math="D_{\text{comb}}" /> が大きくなり、評価が高まります。
+                    当たりやすい組み合わせほど <InlineMath math="D_{\text{comb}}" /> が大きくなり、評価が高まります。
                   </p>
                 </div>
               </section>
