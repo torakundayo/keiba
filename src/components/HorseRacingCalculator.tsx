@@ -48,6 +48,12 @@ export default function TrifectaReturnCalculator() {
   const [results, setResults] = useState<{
     totalStakes: number
     weightedReturn: number
+    combinations: {
+      horses: number[]
+      stake: number
+      expectedReturn: number
+      approximateOdds: number
+    }[]
   } | null>(null)
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -92,18 +98,24 @@ export default function TrifectaReturnCalculator() {
       let sumD = 0
       let sumWeightedReturn = 0
 
+      const combinationResults: {
+        horses: number[]
+        stake: number
+        expectedReturn: number
+        approximateOdds: number
+      }[] = []
+
       for (let c = 0; c < combosStakes.length; c++) {
         const comboStakes = combosStakes[c]
         const comboOddsSet = combosOdds[c]
         const comboP = combosPnorm[c]
+        const horses = includedIndices.filter((_, idx) =>
+          combinations(Array.from({length: includedIndices.length}, (_, i) => i), 3)[c].includes(idx)
+        )
 
-        // P_ijk = p_i_norm * p_j_norm * p_k_norm
         const P_ijk = comboP.reduce((prod, p) => prod * p, 1)
-        // 3連複オッズ近似 = 0.6 / P_ijk
         const trifectaOdds = 0.6 / P_ijk
-
         const comboStakeSum = comboStakes.reduce((sum, val) => sum + val, 0)
-        // comboReturn = comboStakeSum × trifectaOdds
         const comboReturn = comboStakeSum * trifectaOdds
 
         // D_comb = 1/(O1×O2×O3)
@@ -113,13 +125,22 @@ export default function TrifectaReturnCalculator() {
         totalStakesAllCombos += comboStakeSum
         sumD += D_comb
         sumWeightedReturn += comboReturn * D_comb
+
+        // 各組み合わせの結果を保存
+        combinationResults.push({
+          horses: horses.map(i => i + 1), // 1-indexed
+          stake: comboStakeSum,
+          expectedReturn: comboReturn,
+          approximateOdds: trifectaOdds
+        })
       }
 
       const weightedReturn = sumD > 0 ? sumWeightedReturn / sumD : 0
 
       setResults({
         totalStakes: totalStakesAllCombos,
-        weightedReturn: weightedReturn
+        weightedReturn: weightedReturn,
+        combinations: combinationResults
       })
     }
   }
@@ -308,7 +329,27 @@ export default function TrifectaReturnCalculator() {
               <div className="rounded-lg border p-4 space-y-2">
                 <p>総掛け金: <span className="font-bold">{Math.round(results.totalStakes).toLocaleString()}</span> 円</p>
                 <p>難易度加重期待リターン: <span className="font-bold">{Math.round(results.weightedReturn).toLocaleString()}</span> 円</p>
+                <p>総組合せ数: <span className="font-bold">{results.combinations.length}</span> 通り</p>
               </div>
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">買い目と期待リターン</h3>
+                <div className="grid gap-4 md:grid-cols-3">
+                  {results.combinations.map((combo, idx) => (
+                    <div key={idx} className="p-4 border rounded-lg hover:bg-blue-50 transition-all">
+                      <p className="font-medium">
+                        {combo.horses.join('-')}
+                      </p>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <p>掛け金: {combo.stake.toLocaleString()}円</p>
+                        <p>近似オッズ: {combo.approximateOdds.toFixed(1)}</p>
+                        <p>期待リターン: {Math.round(combo.expectedReturn).toLocaleString()}円</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <p className="text-sm text-gray-600">
                 加重平均期待リターンは、(0.6/P_ijk)で近似した3連複オッズを用い、
                 オッズ積逆数で加重平均した結果です。
@@ -382,7 +423,7 @@ export default function TrifectaReturnCalculator() {
                   <BlockMath math="\text{難易度加重期待リターン} = \frac{\sum (\text{期待リターン} \times D_{\text{comb}})}{\sum D_{\text{comb}}}" />
                   <p>
                     <BlockMath math="D_{\text{comb}} = \frac{1}{O_1 \times O_2 \times O_3}" />
-                    当たりやすい組み合わせほど <InlineMath math="D_{\text{comb}}" /> が大きくなり、評価が高まります。
+                    当たりやすい組み合わせほ�� <InlineMath math="D_{\text{comb}}" /> が大きくなり、評価が高まります。
                   </p>
                 </div>
               </section>
