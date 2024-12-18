@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip"
+import 'katex/dist/katex.min.css';
 
 const inter = Inter({
   subsets: ["latin"],
