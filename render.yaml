@@ -1,9 +1,10 @@
 services:
   - type: web
-    name: keiba
-    env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    name: horse-racing-calculator
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.8.10
+      - key: NODE_ENV
+        value: production
+    autoDeploy: true

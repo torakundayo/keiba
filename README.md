@@ -50,3 +50,18 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Renderへのデプロイ
+
+1. GitHubにリポジトリをプッシュ
+2. Renderアカウントを作成
+3. "New +" > "Web Service"を選択
+4. GitHubリポジトリを連携
+5. 以下の設定を入力：
+   - Name: horse-racing-calculator
+   - Environment: Node
+   - Build Command: `npm install && npm run build`
+   - Start Command: `npm start`
+6. "Create Web Service"をクリック
+
+デプロイが完了すると、提供されたURLでアプリケーションにアクセスできます。
