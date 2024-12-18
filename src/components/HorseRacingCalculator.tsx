@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, ChangeEvent, useMemo } from "react"
+import { useState, ChangeEvent, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -41,13 +41,164 @@ function combinations<T>(array: T[], r: number): T[][] {
   return result
 }
 
+// HorseInput コンポーネントを作成
+function HorseInput({
+  index,
+  stake,
+  odd,
+  onStakeChange,
+  onOddChange
+}: {
+  index: number
+  stake: number
+  odd: number
+  onStakeChange: (value: number) => void
+  onOddChange: (value: number) => void
+}) {
+  const handlers = useSwipeable({
+    onSwipedLeft: () => onStakeChange(Math.max(0, stake - 100)),
+    onSwipedRight: () => onStakeChange(stake + 100),
+    onSwipedUp: () => onOddChange(odd + 0.1),
+    onSwipedDown: () => onOddChange(Math.max(1, odd - 0.1)),
+    trackMouse: true
+  })
+
+  return (
+    <div
+      className="bg-white rounded-lg shadow p-4 space-y-3"
+      {...handlers}
+    >
+      <span className="text-xl font-bold text-blue-900">{index + 1}番</span>
+
+      <div className="space-y-4">
+        {/* 重みの入力 */}
+        <div className="space-y-2">
+          <Label className="text-sm text-gray-600">重み</Label>
+          <div className="space-y-2">
+            {/* スライダー */}
+            <div className="px-2">
+              <Slider
+                value={[Math.min(stake, 1000)]}
+                onValueChange={(value) => onStakeChange(value[0])}
+                min={0}
+                max={1000}
+                step={100}
+                className="my-4"
+              />
+            </div>
+            {/* 数値入力と微調整ボタン */}
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => onStakeChange(Math.max(0, stake - 100))}
+                className="w-[60px] h-[45px]"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <Input
+                type="number"
+                min={0}
+                step={100}
+                value={stake}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value)
+                  if (!isNaN(value) && value >= 0) {
+                    onStakeChange(value)
+                  }
+                }}
+                onWheel={(e) => {
+                  e.preventDefault()
+                  if (document.activeElement === e.currentTarget) {
+                    const delta = e.deltaY > 0 ? -100 : 100
+                    onStakeChange(Math.max(0, stake + delta))
+                  }
+                }}
+                className="text-center w-[100px] h-[45px]"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => onStakeChange(stake + 100)}
+                className="w-[60px] h-[45px]"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* オッズの入力 */}
+        <div className="space-y-2">
+          <Label className="text-sm text-gray-600">単勝オッズ</Label>
+          <div className="space-y-2">
+            {/* スライダー */}
+            <div className="px-2">
+              <Slider
+                value={[Math.min(odd, 100)]}
+                onValueChange={(value) => onOddChange(value[0])}
+                min={1.0}
+                max={100.0}
+                step={0.1}
+                className="my-4"
+              />
+            </div>
+            {/* 数値入力と微調整ボタン */}
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => onOddChange(Math.max(1, odd - 0.1))}
+                className="w-[60px] h-[45px]"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <Input
+                type="number"
+                min={1.0}
+                step={0.1}
+                value={Number(odd).toFixed(1)}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value)
+                  if (!isNaN(value) && value >= 1.0) {
+                    onOddChange(value)
+                  }
+                }}
+                onWheel={(e) => {
+                  e.preventDefault()
+                  if (document.activeElement === e.currentTarget) {
+                    const delta = e.deltaY > 0 ? -0.1 : 0.1
+                    onOddChange(Math.max(1, odd + delta))
+                  }
+                }}
+                className="text-center w-[100px] h-[45px]"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => onOddChange(odd + 0.1)}
+                className="w-[60px] h-[45px]"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function TrifectaReturnCalculator() {
   const [step, setStep] = useState(0)
-  const [totalHorses, setTotalHorses] = useState<number>(18)
-
+  const [totalHorses, setTotalHorses] = useState<number>(0)
   const [stakes, setStakes] = useState<number[]>([])
   const [odds, setOdds] = useState<number[]>([])
-
+  const [isClient, setIsClient] = useState(false)
   const [results, setResults] = useState<{
     totalStakes: number
     weightedReturn: number
@@ -58,6 +209,17 @@ export default function TrifectaReturnCalculator() {
       approximateOdds: number
     }[]
   } | null>(null)
+
+  useEffect(() => {
+    setTotalHorses(18)
+    setStakes(Array(18).fill(0))
+    setOdds(Array(18).fill(1.0))
+    setIsClient(true)
+  }, [])
+
+  if (!isClient) {
+    return <div>Loading...</div>
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -169,25 +331,6 @@ export default function TrifectaReturnCalculator() {
     })
     setResults(null)
   }
-
-  // スワイプハンドラーを各馬ごとに作成
-  const handlers = Array.from({ length: totalHorses }).map((_, index) => {
-    return useSwipeable({
-      onSwipedLeft: () => {
-        handleStakeChange(index, Math.max(0, stakes[index] - 100))
-      },
-      onSwipedRight: () => {
-        handleStakeChange(index, stakes[index] + 100)
-      },
-      onSwipedUp: () => {
-        handleOddChange(index, odds[index] + 0.1)
-      },
-      onSwipedDown: () => {
-        handleOddChange(index, Math.max(1, odds[index] - 0.1))
-      },
-      trackMouse: true
-    })
-  })
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50 p-6 md:p-12">
@@ -308,132 +451,14 @@ export default function TrifectaReturnCalculator() {
                   {typeof totalHorses === "number" && totalHorses > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
                       {Array.from({ length: totalHorses }).map((_, i) => (
-                        <div key={i}
-                          className="bg-white rounded-lg shadow p-4 space-y-3"
-                          {...handlers[i]}
-                        >
-                          <span className="text-xl font-bold text-blue-900">{i + 1}番</span>
-
-                          <div className="space-y-4">
-                            {/* 重みの入力 */}
-                            <div className="space-y-2">
-                              <Label className="text-sm text-gray-600">重み</Label>
-                              <div className="space-y-2">
-                                {/* スライダー */}
-                                <div className="px-2">
-                                  <Slider
-                                    value={[Math.min(stakes[i], 1000)]}
-                                    onValueChange={(value) => handleStakeChange(i, value[0])}
-                                    min={0}
-                                    max={1000}
-                                    step={100}
-                                    className="my-4"
-                                  />
-                                </div>
-                                {/* 数値入力と微調整ボタン */}
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleStakeChange(i, Math.max(0, stakes[i] - 100))}
-                                    className="w-[60px] h-[45px]"
-                                  >
-                                    <Minus className="h-4 w-4" />
-                                  </Button>
-                                  <Input
-                                    type="number"
-                                    min={0}
-                                    step={100}
-                                    value={stakes[i]}
-                                    onChange={(e) => {
-                                      const value = parseInt(e.target.value)
-                                      if (!isNaN(value) && value >= 0) {
-                                        handleStakeChange(i, value)
-                                      }
-                                    }}
-                                    onWheel={(e) => {
-                                      e.preventDefault()
-                                      if (document.activeElement === e.currentTarget) {
-                                        const delta = e.deltaY > 0 ? -100 : 100
-                                        handleStakeChange(i, Math.max(0, stakes[i] + delta))
-                                      }
-                                    }}
-                                    className="text-center w-[100px] h-[45px]"
-                                  />
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleStakeChange(i, stakes[i] + 100)}
-                                    className="w-[60px] h-[45px]"
-                                  >
-                                    <Plus className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* オッズの入力 */}
-                            <div className="space-y-2">
-                              <Label className="text-sm text-gray-600">単勝オッズ</Label>
-                              <div className="space-y-2">
-                                {/* スライダー */}
-                                <div className="px-2">
-                                  <Slider
-                                    value={[Math.min(odds[i], 100)]}
-                                    onValueChange={(value) => handleOddChange(i, value[0])}
-                                    min={1.0}
-                                    max={100.0}
-                                    step={0.1}
-                                    className="my-4"
-                                  />
-                                </div>
-                                {/* 数値入力と微調整ボタン */}
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleOddChange(i, Math.max(1, odds[i] - 0.1))}
-                                    className="w-[60px] h-[45px]"
-                                  >
-                                    <Minus className="h-4 w-4" />
-                                  </Button>
-                                  <Input
-                                    type="number"
-                                    min={1.0}
-                                    step={0.1}
-                                    value={Number(odds[i]).toFixed(1)}
-                                    onChange={(e) => {
-                                      const value = parseFloat(e.target.value)
-                                      if (!isNaN(value) && value >= 1.0) {
-                                        handleOddChange(i, value)
-                                      }
-                                    }}
-                                    onWheel={(e) => {
-                                      e.preventDefault()
-                                      if (document.activeElement === e.currentTarget) {
-                                        const delta = e.deltaY > 0 ? -0.1 : 0.1
-                                        handleOddChange(i, Math.max(1, odds[i] + delta))
-                                      }
-                                    }}
-                                    className="text-center w-[100px] h-[45px]"
-                                  />
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleOddChange(i, odds[i] + 0.1)}
-                                    className="w-[60px] h-[45px]"
-                                  >
-                                    <Plus className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                        <HorseInput
+                          key={i}
+                          index={i}
+                          stake={stakes[i]}
+                          odd={odds[i]}
+                          onStakeChange={(value) => handleStakeChange(i, value)}
+                          onOddChange={(value) => handleOddChange(i, value)}
+                        />
                       ))}
                     </div>
                   )}
