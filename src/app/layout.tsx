@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -13,14 +14,14 @@ export const metadata: Metadata = {
   description: "競馬の3連複購入における期待値を計算するためのツール",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+interface RootLayoutProps {
+  children: ReactNode
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="ja" className={inter.variable}>
-      <body className="font-sans">
+      <body className="min-h-screen bg-background font-sans antialiased">
         <TooltipProvider>
           {children}
         </TooltipProvider>

@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone', // Renderでの実行に最適化
+  output: 'standalone',
   poweredByHeader: false,
   reactStrictMode: true,
 }

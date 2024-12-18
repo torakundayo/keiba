@@ -308,10 +308,9 @@ export default function HorseRacingCalculator() {
                   期待値: <span className="font-bold">{results.expectedValue.toFixed(2)}</span>
                 </p>
                 <p className="text-sm text-gray-600">
-                  例: 期待値が {results.expectedValue.toFixed(2)} の場合、100円の馬券は{" "}
+                  例: 期待値が {results.expectedValue.toFixed(2)} の場合、{results.purchaseCount * 100}円の馬券は{" "}
                   <span className="font-bold">
-                    {Math.round(results.expectedValue * 100)}円
-                  </span>{" "}
+                    {Math.round(results.expectedValue * results.purchaseCount * 100)}円</span>{" "}
                   のリターンになります。
                 </p>
               </div>
@@ -324,32 +323,105 @@ export default function HorseRacingCalculator() {
             <CardTitle className="text-2xl text-blue-800">なぜこの結果になるのか？</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 p-8 bg-white">
-            <p>
-              競馬の3連複では、<span className="font-semibold">出走頭数から3頭を選ぶ組み合わせ</span>
-              が対象となります。
-              例えば、18頭立てなら全体の組み合わせ数は <span className="font-semibold">816通り</span>{" "}
-              です。
-            </p>
-            <p>
-              ここで「3着以内に絶対入らない」と思う馬を除外すると、
-              残りの馬の中から3頭を選ぶ組み合わせ数が減少し、期待値が変化します。
-            </p>
-            <div className="rounded-lg bg-gray-50 p-4">
-              <p className="mb-2">期待値は次の計算式で求められます：</p>
-              <p className="font-semibold">期待値 = 確信度 × (総リターン ÷ 購入点数)</p>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-600">
-                <li>
-                  総リターン: 競馬全体の控除率(約25%)を考慮したリターン（例: 0.75倍）
-                </li>
-                <li>
-                  購入点数: 除外後の馬数から3頭を選ぶ組み合わせ数（C(馬数,3)）
-                </li>
-              </ul>
+            <div className="space-y-6">
+              <section className="space-y-4">
+                <h3 className="text-xl font-semibold text-blue-800">期待値とは何か？</h3>
+                <p>
+                  期待値とは、同じ条件のレースを理論的に何度も繰り返した場合の「平均的な回収率」を表した数値です。
+                </p>
+                <div className="rounded-lg bg-blue-50 p-4 space-y-2">
+                  <p>「期待値が1.76」という場合、長い目で見て平均すると100円あたり176円のリターンが見込まれることを意味します。</p>
+                  <p className="text-gray-600">
+                    しかし、これは統計的な平均値であり、1回1回のレースで必ず100円が176円になることを保証するものではありません。
+                  </p>
+                  <p className="text-gray-600">
+                    実際には、ほとんどのレースで損をし続け、まれに大きな配当が当たることで全体平均が1.76に近づく、というイメージです。
+                  </p>
+                </div>
+              </section>
+
+              <section className="space-y-4">
+                <h3 className="text-xl font-semibold text-blue-800">確信度とは？</h3>
+                <p>
+                  ここで用いている「確信度」とは、除外した馬が「3着以内に絶対来ない」と自分で判断した場合、その判断が正しい確率（％）を意味します。
+                </p>
+                <div className="rounded-lg bg-gray-50 p-4 space-y-2">
+                  <p>例えば、確信度92%とした場合、その除外判断が約10回中9回当たると「自分では考えている」ことを表します。</p>
+                  <p className="text-gray-600">
+                    実際に92%の確率で当たるかどうかは、あなたの予想精度や情報量に大きく左右されます。
+                  </p>
+                  <p className="text-gray-600">
+                    確信度が高ければ高いほど、想定上は期待値が上昇しますが、確信度の正しさを裏付ける客観的な根拠がない限り、その数値はあくまで自分の主観的な自信です。
+                  </p>
+                </div>
+              </section>
+
+              <section className="space-y-4">
+                <h3 className="text-xl font-semibold text-blue-800">購入する点数の意味</h3>
+                <p>
+                  「購入する点数」とは、残った馬（除外馬を外した後）の中から3頭を選ぶ組み合わせ数を意味しています。
+                </p>
+                <div className="rounded-lg bg-yellow-50 p-4 space-y-2">
+                  <p>
+                    例えば除外馬数4頭・確信度92%で220点となれば、220通りの3頭組み合わせをすべて購入すると考え、100円ずつ買えば22,000円を投資することになります。
+                  </p>
+                  <p className="text-gray-600">
+                    この戦略は、1レースあたり大きな資金が必要になることもあり、当たれば1点が確実に的中する状況を作り出せる可能性がある一方で、除外判断が外れた場合は全額損になるリスクもあります。
+                  </p>
+                </div>
+              </section>
+
+              <section className="space-y-4">
+                <h3 className="text-xl font-semibold text-blue-800">なぜ期待値が変化するのか？</h3>
+                <p>
+                  期待値は、「全ての馬券を購入した場合の平均的リターン」を基準にしています。
+                </p>
+                <div className="rounded-lg bg-gray-50 p-4 space-y-2">
+                  <p>
+                    元々、JRAの控除率から考えると、何もしなければ全ての馬券の合計期待値は約0.75（100円あたり75円）程度に落ち着きます。
+                  </p>
+                  <p>
+                    ところが、「3着以内に絶対来ない馬」を除外できると、残りの組み合わせ数が減り、そこに割り振られる期待的リターンが相対的に増えるため、期待値が1.0を超えたり、1.76など高い値になったりします。
+                  </p>
+                  <p className="text-gray-600">
+                    しかし、この計算上の期待値1.76は「除外した馬が本当に92%の確率で3着以内に来ない」という条件が前提となっています。もし実際のレースで除外した馬が思ったより来てしまうと、期待値は下がります。
+                  </p>
+                </div>
+              </section>
+
+              <section className="space-y-4">
+                <h3 className="text-xl font-semibold text-blue-800">この期待値は「理想的な長期平均」</h3>
+                <p>
+                  期待値1.76などの数値は、確信度が正しく、無数に試行を繰り返した「理想的な長期平均」の数字です。
+                </p>
+                <div className="rounded-lg bg-blue-50 p-4 space-y-2">
+                  <p>
+                    現実には、試行回数が少ないうちは大きなぶれが生じます。何十回も外す可能性もあれば、早めに高配当を得て平均が一気に上昇することもあります。
+                  </p>
+                  <p>
+                    長期的に見て、この確信度と除外戦略を維持できれば「平均的」にそれらの数値に近づいていく、という理論モデルの結果です。
+                  </p>
+                </div>
+              </section>
+
+              <section className="space-y-4">
+                <h3 className="text-xl font-semibold text-blue-800">まとめ</h3>
+                <div className="rounded-lg bg-gradient-to-r from-blue-50 to-gray-50 p-6">
+                  <ul className="space-y-2 list-disc pl-5">
+                    <li><span className="font-semibold">期待値</span> = 長期的な平均回収率</li>
+                    <li><span className="font-semibold">確信度</span> = 除外判断の正しさを自分で設定した確率（主観）</li>
+                    <li><span className="font-semibold">購入点数</span> = 馬を絞った結果、残りから3頭を選ぶ組み合わせ数</li>
+                  </ul>
+                  <div className="mt-4 space-y-2 text-gray-600">
+                    <p>このツールが示す結果は、あくまで理論的なモデルに基づくものです。</p>
+                    <p>実際のレースでは、確信度が思うほど高くなかったり、大当たりが出る前に資金が尽きたりといった、様々な現実的要因があります。</p>
+                    <p className="font-medium text-gray-800">
+                      このツールの結果を参考情報として受け止め、実際の馬券購入では自己責任の下、十分な試行回数や資金管理、情報収集を行って判断することをおすすめします。
+                    </p>
+                  </div>
+                </div>
+              </section>
             </div>
-            <p>
-              このツールでは、あなたの直感や確信度に基づき、
-              除外馬数と確信度が期待値に与える影響を計算し、表示します。
-            </p>
           </CardContent>
         </Card>
       </div>
