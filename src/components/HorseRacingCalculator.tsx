@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, ChangeEvent, useMemo, useEffect } from "react"
+import { useState, ChangeEvent, useMemo, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -64,133 +64,137 @@ function HorseInput({
   })
 
   return (
-    <div
-      className="bg-white rounded-lg shadow p-4 space-y-3"
-      {...handlers}
-    >
+    <div className="bg-white rounded-lg shadow p-4 space-y-3">
       <span className="text-xl font-bold text-blue-900">{index + 1}番</span>
 
       <div className="space-y-4">
         {/* 重みの入力 */}
         <div className="space-y-2">
-          <Label className="text-sm text-gray-600">重み</Label>
-          <div className="space-y-2">
-            {/* スライダー */}
-            <div className="px-2">
+          <div className="flex items-center gap-2">
+            <Label className="text-sm text-gray-600 min-w-[50px]">重み</Label>
+            <div {...handlers} className="flex-1">
               <Slider
                 value={[Math.min(stake, 1000)]}
                 onValueChange={(value) => onStakeChange(value[0])}
                 min={0}
                 max={1000}
                 step={100}
-                className="my-4"
+                className="w-full"
               />
             </div>
-            {/* 数値入力と微調整ボタン */}
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => onStakeChange(Math.max(0, stake - 100))}
-                className="w-[60px] h-[45px]"
-              >
-                <Minus className="h-4 w-4" />
-              </Button>
-              <Input
-                type="number"
-                min={0}
-                step={100}
-                value={stake}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value)
-                  if (!isNaN(value) && value >= 0) {
-                    onStakeChange(value)
-                  }
-                }}
-                onWheel={(e) => {
-                  e.preventDefault()
-                  if (document.activeElement === e.currentTarget) {
-                    const delta = e.deltaY > 0 ? -100 : 100
-                    onStakeChange(Math.max(0, stake + delta))
-                  }
-                }}
-                className="text-center w-[100px] h-[45px]"
-              />
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => onStakeChange(stake + 100)}
-                className="w-[60px] h-[45px]"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
+          </div>
+          {/* 数値入力と微調整ボタン */}
+          <div className="flex items-center gap-2 justify-end ml-[50px]">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => onStakeChange(Math.max(0, stake - 100))}
+              className="w-[70px] h-[37px]"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <Input
+              type="number"
+              min={0}
+              step={100}
+              value={stake}
+              onChange={(e) => {
+                const value = parseInt(e.target.value)
+                if (!isNaN(value) && value >= 0) {
+                  onStakeChange(value)
+                }
+              }}
+              onWheel={(e) => {
+                e.preventDefault()
+                if (document.activeElement === e.currentTarget) {
+                  const delta = e.deltaY > 0 ? -100 : 100
+                  onStakeChange(Math.max(0, stake + delta))
+                }
+              }}
+              className="text-center w-[80px] h-[37px]"
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => onStakeChange(stake + 100)}
+              className="w-[70px] h-[37px]"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
         {/* オッズの入力 */}
         <div className="space-y-2">
-          <Label className="text-sm text-gray-600">単勝オッズ</Label>
-          <div className="space-y-2">
-            {/* スライダー */}
-            <div className="px-2">
+          <div className="flex items-center gap-2">
+            <Label className="text-sm text-gray-600 min-w-[50px]">オッズ</Label>
+            <div {...handlers} className="flex-1">
               <Slider
                 value={[Math.min(odd, 100)]}
                 onValueChange={(value) => onOddChange(value[0])}
                 min={1.0}
                 max={100.0}
                 step={0.1}
-                className="my-4"
+                className="w-full"
               />
             </div>
-            {/* 数値入力と微調整ボタン */}
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => onOddChange(Math.max(1, odd - 0.1))}
-                className="w-[60px] h-[45px]"
-              >
-                <Minus className="h-4 w-4" />
-              </Button>
-              <Input
-                type="number"
-                min={1.0}
-                step={0.1}
-                value={Number(odd).toFixed(1)}
-                onChange={(e) => {
-                  const value = parseFloat(e.target.value)
-                  if (!isNaN(value) && value >= 1.0) {
-                    onOddChange(value)
-                  }
-                }}
-                onWheel={(e) => {
-                  e.preventDefault()
-                  if (document.activeElement === e.currentTarget) {
-                    const delta = e.deltaY > 0 ? -0.1 : 0.1
-                    onOddChange(Math.max(1, odd + delta))
-                  }
-                }}
-                className="text-center w-[100px] h-[45px]"
-              />
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => onOddChange(odd + 0.1)}
-                className="w-[60px] h-[45px]"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
+          </div>
+          {/* 数値入力と微調整ボタン */}
+          <div className="flex items-center gap-2 justify-end ml-[50px]">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => onOddChange(Math.max(1, odd - 0.1))}
+              className="w-[70px] h-[37px]"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <Input
+              type="number"
+              min={1.0}
+              step={0.1}
+              value={Number(odd).toFixed(1)}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value)
+                if (!isNaN(value) && value >= 1.0) {
+                  onOddChange(value)
+                }
+              }}
+              onWheel={(e) => {
+                e.preventDefault()
+                if (document.activeElement === e.currentTarget) {
+                  const delta = e.deltaY > 0 ? -0.1 : 0.1
+                  onOddChange(Math.max(1, odd + delta))
+                }
+              }}
+              className="text-center w-[80px] h-[37px]"
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => onOddChange(odd + 0.1)}
+              className="w-[70px] h-[37px]"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
     </div>
   )
+}
+
+// 型定義を修正
+type CombinationResult = {
+  horses: number[]
+  stake: number
+  expectedReturn: number
+  approximateOdds: number
+  probability: number
 }
 
 export default function TrifectaReturnCalculator() {
@@ -202,13 +206,72 @@ export default function TrifectaReturnCalculator() {
   const [results, setResults] = useState<{
     totalStakes: number
     weightedReturn: number
-    combinations: {
+    combinations: CombinationResult[]
+    minReturn: {
+      value: number
       horses: number[]
-      stake: number
-      expectedReturn: number
-      approximateOdds: number
-    }[]
+      odds: number
+    }
+    maxReturn: {
+      value: number
+      horses: number[]
+      odds: number
+    }
   } | null>(null)
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const [displayMode, setDisplayMode] = useState<'card' | 'table'>('card');
+  const [sortConfig, setSortConfig] = useState<{
+    key: 'horses' | 'stake' | 'approximateOdds' | 'expectedReturn' | 'probability';
+    direction: 'asc' | 'desc';
+  }>({
+    key: 'horses',
+    direction: 'asc'
+  });
+
+  // 計算結果の組み合わせをソートする処理
+  // useMemoを使用してソート結果をメモ化し、不要な再計算を防ぐ
+  const sortedCombinations = useMemo(() => {
+    // 計算結果がない場合は空配列を返す
+    if (!results?.combinations) return [];
+
+    // 結果配列をコピーしてソート
+    return [...results.combinations].sort((a, b) => {
+      // 馬番組み合わせでソートする場合
+      if (sortConfig.key === 'horses') {
+        // 馬番をハイフン区切りの文字列に変換してソート
+        const aStr = a.horses.join('-');
+        const bStr = b.horses.join('-');
+        return sortConfig.direction === 'asc'
+          ? aStr.localeCompare(bStr)  // 昇順
+          : bStr.localeCompare(aStr); // 降順
+      }
+
+      // 確率でソートする場合
+      if (sortConfig.key === 'probability') {
+        // P_ijkを計算（近似オッズの逆数）
+        const aProb = 0.75 / a.approximateOdds;
+        const bProb = 0.75 / b.approximateOdds;
+        return sortConfig.direction === 'asc'
+          ? aProb - bProb  // 昇順
+          : bProb - aProb; // 降順
+      }
+
+      // その他の数値項目（掛け金、オッズ、期待リターン）でソート
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+      return sortConfig.direction === 'asc'
+        ? aValue - bValue  // 昇順
+        : bValue - aValue; // 降順
+    });
+  }, [results?.combinations, sortConfig]);
+
+  const handleSort = (key: typeof sortConfig.key) => {
+    setSortConfig(current => ({
+      key,
+      direction: current.key === key ?
+        (current.direction === 'asc' ? 'desc' : 'asc') : 'asc'
+    }));
+  };
 
   useEffect(() => {
     setTotalHorses(18)
@@ -236,75 +299,126 @@ export default function TrifectaReturnCalculator() {
 
   const calculateResults = () => {
     if (typeof totalHorses === "number") {
+      // 選択された馬のインデックスを抽出
       const includedIndices = stakes.map((s, i) => ({ s, i }))
         .filter(obj => obj.s >= 100)
         .map(obj => obj.i)
 
+      // 3頭未満の場合は計算不可
       if (includedIndices.length < 3) {
         setResults(null)
         return
       }
 
+      // 選択された馬の掛け金とオッズを抽出
       const includedStakes = includedIndices.map(i => stakes[i])
       const includedOdds = includedIndices.map(i => odds[i])
 
-      // p_i_raw = 0.8 / O_i
+      // 生の確率を計算 (オッズから逆算、0.8は単勝市場の払戻率)
       const p_raw = includedOdds.map(o => 0.8 / o)
+      // 生の確率の合計
       const sum_p_raw = p_raw.reduce((acc, v) => acc + v, 0)
-      const p_norm = p_raw.map(v => v / sum_p_raw) // 正規化
+      // 確率を正規化（合計が1になるように）
+      const p_norm = p_raw.map(v => v / sum_p_raw)
 
-      const combosStakes = combinations(includedStakes, 3)
-      const combosOdds = combinations(includedOdds, 3)      // 単勝オッズ(オリジナル)で難易度計算用
-      const combosPnorm = combinations(p_norm, 3)          // 正規化確率でP_ijk計算用
+      // 3頭組み合わせの配列を生成
+      const combosStakes = combinations(includedStakes, 3)  // 掛け金の組み合わせ
+      const combosOdds = combinations(includedOdds, 3)      // オッズの組み合わせ（難易度計算用）
+      const combosPnorm = combinations(p_norm, 3)           // 正規化確率の組み合わせ（確率計算用）
 
-      let totalStakesAllCombos = 0
-      let sumD = 0
-      let sumWeightedReturn = 0
+      // 集計用の変数を初期化
+      let totalStakesAllCombos = 0  // 総掛け金
+      let sumD = 0                  // 難易度の合計
+      let sumWeightedReturn = 0     // 難易度加重期待リターンの合計
 
-      const combinationResults: {
-        horses: number[]
-        stake: number
-        expectedReturn: number
-        approximateOdds: number
-      }[] = []
+      // 各組み合わせの結果を格納する配列
+      const combinationResults: CombinationResult[] = []
 
+      // 各組み合わせについて計算
       for (let c = 0; c < combosStakes.length; c++) {
-        const comboStakes = combosStakes[c]
-        const comboOddsSet = combosOdds[c]
-        const comboP = combosPnorm[c]
+        const comboStakes = combosStakes[c]  // この組み合わせの掛け金
+        const comboOddsSet = combosOdds[c]   // この組み合わせのオッズ
+        const comboP = combosPnorm[c]        // この組み合わせの正規化確率
+
+        // 馬番を1から始まる番号に変換
         const horses = includedIndices.filter((_, idx) =>
           combinations(Array.from({ length: includedIndices.length }, (_, i) => i), 3)[c].includes(idx)
         )
 
-        const P_ijk = comboP.reduce((prod, p) => prod * p, 1)
-        const trifectaOdds = 0.75 / P_ijk
+        // この組み合わせの総掛け金を計算
         const comboStakeSum = comboStakes.reduce((sum, val) => sum + val, 0)
-        const comboReturn = comboStakeSum * trifectaOdds
 
-        // D_comb = 1/(O1×O2×O3)
-        const productOdds = comboOddsSet.reduce((prod, o) => prod * o, 1)
+        // 3頭の組み合わせの確率を計算（正規化された確率の積）
+        const P_ijk_raw = comboP.reduce((prod, p) => prod * p, 1)
+        combinationResults.push({
+          horses: horses.map(i => i + 1),
+          stake: comboStakeSum,
+          expectedReturn: 0, // 後で計算
+          approximateOdds: 0, // 後で計算
+          probability: P_ijk_raw  // 一時的に生の確率を保存
+        })
+      }
+
+      // 確率の合計を計算
+      const totalProb = combinationResults.reduce((sum, c) => sum + c.probability, 0)
+
+      // 確率を正規化して期待リターンとオッズを計算
+      for (const combo of combinationResults) {
+        // 確率を正規化
+        const P_ijk = combo.probability / totalProb
+
+        // 3連複オッズを確率から計算（0.75は3連複市場の払戻率）
+        const trifectaOdds = 0.75 / P_ijk
+
+        // 期待リターンを計算
+        const comboReturn = combo.stake * trifectaOdds
+
+        // 結果を更新
+        combo.probability = P_ijk  // 正規化された確率で上書き
+        combo.approximateOdds = trifectaOdds
+        combo.expectedReturn = comboReturn
+      }
+
+      // 難易度の計算と集計
+      for (const combo of combinationResults) {
+        // 難易度を計算（オッズの積の逆数）
+        const productOdds = combosOdds[combinationResults.indexOf(combo)].reduce((prod, o) => prod * o, 1)
         const D_comb = 1 / productOdds
 
-        totalStakesAllCombos += comboStakeSum
+        // 集計値を更新
+        totalStakesAllCombos += combo.stake
         sumD += D_comb
-        sumWeightedReturn += comboReturn * D_comb
-
-        // 各組み合わせの結果を保存
-        combinationResults.push({
-          horses: horses.map(i => i + 1), // 1-indexed
-          stake: comboStakeSum,
-          expectedReturn: comboReturn,
-          approximateOdds: trifectaOdds
-        })
+        sumWeightedReturn += combo.expectedReturn * D_comb
       }
 
       const weightedReturn = sumD > 0 ? sumWeightedReturn / sumD : 0
 
+      // 最小・最大期待リターンを計算
+      const minReturn = Math.min(...combinationResults.map(c => c.expectedReturn));
+      const maxReturn = Math.max(...combinationResults.map(c => c.expectedReturn));
+      const minReturnCombo = combinationResults.find(c => c.expectedReturn === minReturn);
+      const maxReturnCombo = combinationResults.find(c => c.expectedReturn === maxReturn);
+
       setResults({
         totalStakes: totalStakesAllCombos,
         weightedReturn: weightedReturn,
-        combinations: combinationResults
-      })
+        combinations: combinationResults,
+        minReturn: {
+          value: minReturn,
+          horses: minReturnCombo?.horses || [],
+          odds: minReturnCombo?.approximateOdds || 0
+        },
+        maxReturn: {
+          value: maxReturn,
+          horses: maxReturnCombo?.horses || [],
+          odds: maxReturnCombo?.approximateOdds || 0
+        }
+      });
+
+      // 計算結果までスクロール
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
     }
   }
   const handleTotalHorsesChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -368,7 +482,7 @@ export default function TrifectaReturnCalculator() {
               </div>
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold text-blue-800">特徴</h3>
-                <div className="rounded-xl bg-gradient-to-br from-slate-50 to-white p-6 shadow-sm">
+                <div className="rounded-xl bg-gradient-to-br from-blue-50 to-white p-6 shadow-sm">
                   <ul className="list-disc list-inside space-y-3 text-gray-700">
                     <li>単勝オッズから3連複を予測</li>
                     <li>当たりやすさを考慮した期待値計算</li>
@@ -384,16 +498,36 @@ export default function TrifectaReturnCalculator() {
           border-0 bg-white/90 backdrop-blur-sm">
           <CardHeader className="bg-gradient-to-r from-slate-50/50 via-white to-blue-50/50
             py-8 border-b border-blue-100/50">
-            <CardTitle className="text-2xl text-blue-900 flex items-center gap-4">
-              <Calculator className="h-7 w-7 text-blue-600" />
-              <span>{step === 0 ? "Step 1: 出走頭数入力" : "Step 2: 各馬の設定"}</span>
+            <CardTitle className="text-2xl text-blue-900 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Calculator className="h-7 w-7 text-blue-600" />
+                <span>{step === 0 ? "Step 1: 出走頭数入力" : "Step 2: 各馬の設定"}</span>
+              </div>
+              {step === 1 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="relative group px-6 py-2 text-blue-700 hover:text-blue-900
+                    hover:bg-blue-100/50 transition-all duration-300"
+                  onClick={() => {
+                    setStep(0)
+                    setStakes([])
+                    setOdds([])
+                    setResults(null)
+                  }}
+                >
+                  <ChevronRight className="h-5 w-5 rotate-180 mr-2
+                    group-hover:-translate-x-1 transition-transform duration-200" />
+                  Step 1に戻る
+                </Button>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {step === 0 ? (
-                <div className="space-y-6">
-                  <Label className="text-lg font-medium text-blue-900 block mb-4">
+                <div className="space-y-4">
+                  <Label className="text-lg font-medium text-blue-900 block">
                     出走頭数: {totalHorses}頭
                   </Label>
                   <div className="max-w-lg mx-auto px-8">
@@ -411,43 +545,21 @@ export default function TrifectaReturnCalculator() {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-8">
-                  <div className="bg-gradient-to-r from-blue-50 to-slate-50 rounded-xl p-6
-                    border border-blue-100/50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                          onClick={() => {
-                            setStep(0)
-                            setStakes([])
-                            setOdds([])
-                            setResults(null)
-                          }}
-                        >
-                          <ChevronRight className="h-4 w-4 rotate-180 mr-2" />
-                          戻る
-                        </Button>
-                        <p className="text-lg font-medium text-blue-900">
-                          出走頭数: {totalHorses}頭
-                        </p>
-                      </div>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Info className="h-5 w-5 text-blue-400" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>重みは100単位で設定してください</p>
-                            <p>0円は除外扱いとなります</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                <div className="space-y-6">
+                  {/* ナビゲーションヘッダー */}
+                  <div className="flex items-center gap-4">
+                  </div>
+
+                  {/* レース情報と入力ガイド */}
+                  <div className="!mt-0">
+                    {/* レース情報 */}
+                    <div className="text-sm text-blue-700 flex items-center gap-2">
+                      <TbHorse className="h-4 w-4" />
+                      <span>出走頭数: {totalHorses}頭</span>
                     </div>
                   </div>
 
+                  {/* 馬の入力フォーム */}
                   {typeof totalHorses === "number" && totalHorses > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
                       {Array.from({ length: totalHorses }).map((_, i) => (
@@ -496,36 +608,147 @@ export default function TrifectaReturnCalculator() {
         </Card>
 
         {results && (
-          <Card className="mb-10 overflow-hidden border-2 border-blue-400 shadow-xl
-            hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+          <Card className="mb-10 overflow-hidden border-2 border-blue-400 shadow-xl"
+            ref={resultsRef}
+          >
             <CardHeader className="border-b border-blue-100 bg-gradient-to-r from-blue-100 via-blue-50 to-white py-8">
               <CardTitle className="text-2xl text-blue-800">
                 <span>計算結果</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-8 p-8 bg-white">
-              <div className="rounded-lg border p-4 space-y-2">
-                <p>総掛け金: <span className="font-bold">{Math.round(results.totalStakes).toLocaleString()}</span> 円</p>
-                <p>難易度加重期待リターン: <span className="font-bold">{Math.round(results.weightedReturn).toLocaleString()}</span> 円</p>
-                <p>総組合せ数: <span className="font-bold">{results.combinations.length}</span> 通り</p>
+              <div className="rounded-lg border p-6 space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <p>
+                      総組合せ数: <span className="font-bold">{results.combinations.length}</span> 通り
+                    </p>
+                    <p>総掛け金: <span className="font-bold">{Math.round(results.totalStakes).toLocaleString()}</span> 円</p>
+                    <p>難易度加重期待リターン: <span className="font-bold">{Math.round(results.weightedReturn).toLocaleString()}</span> 円</p>
+                  </div>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-sm text-blue-600">最小期待リターン:</p>
+                      <p className="font-bold">{Math.round(results.minReturn.value).toLocaleString()}円</p>
+                      <p className="text-sm text-gray-600">
+                        組合せ: {results.minReturn.horses.join('-')} (オッズ: {results.minReturn.odds.toFixed(1)})
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-blue-600">最大期待リターン:</p>
+                      <p className="font-bold">{Math.round(results.maxReturn.value).toLocaleString()}円</p>
+                      <p className="text-sm text-gray-600">
+                        組合せ: {results.maxReturn.horses.join('-')} (オッズ: {results.maxReturn.odds.toFixed(1)})
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">買い目と期待リターン</h3>
-                <div className="grid gap-4 md:grid-cols-3">
-                  {results.combinations.map((combo, idx) => (
-                    <div key={idx} className="p-4 border rounded-lg hover:bg-blue-50 transition-all">
-                      <p className="font-medium">
-                        {combo.horses.join('-')}
-                      </p>
-                      <div className="text-sm text-gray-600 space-y-1">
-                        <p>掛け金: {combo.stake.toLocaleString()}円</p>
-                        <p>近似オッズ: {combo.approximateOdds.toFixed(1)}</p>
-                        <p>期待リターン: {Math.round(combo.expectedReturn).toLocaleString()}円</p>
-                      </div>
-                    </div>
-                  ))}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">買い目と期待リターン</h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDisplayMode(prev => prev === 'card' ? 'table' : 'card')}
+                    className="text-blue-600 hover:text-blue-700"
+                  >
+                    {displayMode === 'card' ? 'テーブル表示' : 'カード表示'}
+                  </Button>
                 </div>
+
+                {displayMode === 'card' ? (
+                  <div className="grid gap-4 md:grid-cols-3">
+                    {results.combinations.map((combo, idx) => (
+                      <div key={idx} className="p-4 border rounded-lg hover:bg-blue-50 transition-all">
+                        <p className="font-medium">
+                          {combo.horses.join('-')}
+                        </p>
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <p>掛け金: {combo.stake.toLocaleString()}円</p>
+                          <p>近似オッズ: {combo.approximateOdds.toFixed(1)}</p>
+                          <p>期待リターン: {Math.round(combo.expectedReturn).toLocaleString()}円</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead className="bg-blue-50">
+                        <tr>
+                          {[
+                            { key: 'horses', label: '組合せ' },
+                            { key: 'stake', label: '掛け金' },
+                            { key: 'approximateOdds', label: '近似オッズ' },
+                            { key: 'expectedReturn', label: '期待リターン' },
+                            {
+                              key: 'probability',
+                              label: (
+                                <div className="flex items-center gap-1">
+                                  確率
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <Info className="h-4 w-4 text-blue-500" />
+                                      </TooltipTrigger>
+                                      <TooltipContent className="max-w-[300px] p-3 text-sm">
+                                        少ない組み合わせ数では各組み合わせの相対的な確率がモデルの仮定（独立性や単純な積の確率）に強く依存するため、出走頭数が少ないほど確率の歪みが大きくなる傾向があります。
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
+                              )
+                            }
+                          ].map(({ key, label }) => (
+                            <th
+                              key={key}
+                              className="p-2 text-left border font-semibold text-blue-800 cursor-pointer
+                                hover:bg-blue-100 transition-colors"
+                              onClick={() => handleSort(key as typeof sortConfig.key)}
+                            >
+                              <div className="flex items-center gap-1">
+                                {label}
+                                {sortConfig?.key === key && (
+                                  <span className="text-blue-600">
+                                    {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                                  </span>
+                                )}
+                              </div>
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedCombinations.map((combo, idx) => (
+                          <tr key={idx} className="hover:bg-blue-50/50">
+                            <td className="p-2 border font-medium">{combo.horses.join('-')}</td>
+                            <td className="p-2 border text-right">{combo.stake.toLocaleString()}円</td>
+                            <td className="p-2 border text-right">{combo.approximateOdds.toFixed(1)}</td>
+                            <td className="p-2 border text-right">
+                              {Math.round(combo.expectedReturn).toLocaleString()}円
+                            </td>
+                            <td className="p-2 border text-right">
+                              {(combo.probability * 100).toFixed(2)}%
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="bg-blue-50/50 font-medium">
+                          <td className="p-2 border">合計</td>
+                          <td className="p-2 border text-right">
+                            {sortedCombinations.reduce((sum, combo) => sum + combo.stake, 0).toLocaleString()}円
+                          </td>
+                          <td className="p-2 border"></td>
+                          <td className="p-2 border"></td>
+                          <td className="p-2 border text-right">
+                            {(sortedCombinations.reduce((sum, combo) => sum + combo.probability, 0) * 100).toFixed(1)}%
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
 
               <p className="text-sm text-gray-600">
@@ -651,22 +874,36 @@ export default function TrifectaReturnCalculator() {
                       <p className="font-medium">3頭の組み合わせが的中する確率を計算：</p>
                       <div className="overflow-x-auto">
                         <div className="min-w-[300px]">
-                          <BlockMath math="P_{ijk} = p_{i\_\text{norm}} \times p_{j\_\text{norm}} \times p_{k\_\text{norm}}" />
+                          <BlockMath math="P_{ijk}^{\text{初期}} = p_{i\_\text{norm}} \times p_{j\_\text{norm}} \times p_{k\_\text{norm}}" />
                         </div>
-                      </div>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p><InlineMath math="P_{ijk}" />は、i, j, k番目の馬が3連複的中となる確率です。
-                          各馬の正規化された勝率を掛け合わせることで、その組み合わせの理論的な的中確率を求めます。</p>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <p>各3頭組み合わせ（i, j, k）の初期的中確率<InlineMath math="P_{ijk}^{\text{初期}}" />を、正規化された単勝勝率の積として計算します。ここでは簡単のため、各馬の3着以内に入る確率が互いに独立であると仮定しています。</p>
+                        </div>
                       </div>
                     </div>
                   </li>
 
                   <li>
                     <div className="space-y-2">
-                      <p className="font-medium">3連複オッズの理論値を計算：</p>
+                      <p className="font-medium">確率の正規化：</p>
                       <div className="overflow-x-auto">
-                        <div className="min-w-[200px]">
-                          <BlockMath math="\text{3連複オッズ} = \frac{0.75}{P_{ijk}}" />
+                        <div className="min-w-[300px]">
+                          <BlockMath math="S = \sum_{(i,j,k)} P_{ijk}^{\text{初期}}" />
+                          <BlockMath math="P_{ijk} = \frac{P_{ijk}^{\text{初期}}}{S}" />
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p>これにより、全組み合わせの確率の合計が100%になるように調整します。</p>
+                      </div>
+                    </div>
+                  </li>
+
+                  <li>
+                    <div className="space-y-2">
+                      <p className="font-medium">3連複オッズの近似：</p>
+                      <div className="overflow-x-auto">
+                        <div className="min-w-[300px]">
+                          <BlockMath math="O_{ijk} = \frac{0.75}{P_{ijk}}" />
                         </div>
                       </div>
                       <div className="bg-gray-50 p-4 rounded-lg space-y-2">
@@ -678,10 +915,10 @@ export default function TrifectaReturnCalculator() {
 
                   <li>
                     <div className="space-y-2">
-                      <p className="font-medium">期待リターンを計算：</p>
+                      <p className="font-medium">期待リターンの計算：</p>
                       <div className="overflow-x-auto">
                         <div className="min-w-[300px]">
-                          <BlockMath math="\text{期待リターン} = \text{掛け金合計} \times \left(\frac{0.75}{P_{ijk}}\right)" />
+                          <BlockMath math="\text{期待リターン}_{ijk} = \text{掛け金}_{ijk} \times O_{ijk}" />
                         </div>
                       </div>
                       <div className="bg-gray-50 p-4 rounded-lg">
@@ -708,14 +945,14 @@ export default function TrifectaReturnCalculator() {
                     </div>
                     <div className="overflow-x-auto">
                       <div className="min-w-[300px]">
-                        <BlockMath math="D_{\text{comb}} = \frac{1}{O_1 \times O_2 \times O_3}" />
+                        <BlockMath math="D_{\text{comb}} = \frac{1}{O_i \times O_j \times O_k}" />
                       </div>
                     </div>
                     <div className="space-y-2"></div>
                     <p className="font-medium">ここで：</p>
                     <ul className="list-disc list-inside space-y-1 ml-4">
                       <li><InlineMath math="D_{\text{comb}}" />：難易度係数（当たりやすさの指標）</li>
-                      <li><InlineMath math="O_1, O_2, O_3" />：組み合わせに含まれる3頭の単勝オッズ</li>
+                      <li><InlineMath math="O_i, O_j, O_k" />：組み合わせに含まれる3頭の単勝オッズ</li>
                     </ul>
                     <p className="mt-4">
                       オッズが低い（＝人気がある＝当たりやすい）組み合わせほど<InlineMath math="D_{\text{comb}}" />は大きくなり、
@@ -727,7 +964,7 @@ export default function TrifectaReturnCalculator() {
 
               {/* まとめ */}
               <section className="space-y-4">
-                <h3 className="text-xl font-semibold text-blue-800">4. まとめ</h3>
+                <h3 className="text-xl font-semibold text-blue-800">まとめ</h3>
                 <div className="rounded-lg bg-gradient-to-r from-blue-50 to-gray-50 p-6 space-y-2">
                   <p>
                     このツールは、<strong>当たりやすい組み合わせを重視して期待リターンを評価</strong>します。

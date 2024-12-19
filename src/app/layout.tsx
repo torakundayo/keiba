@@ -11,8 +11,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "3連複期待値計算ツール",
-  description: "競馬の3連複購入における期待値を計算するためのツール",
+  title: "3連複期待リターン計算ツール",
+  description: "競馬の3連複購入における期待リターンを計算するためのツール",
 };
 
 interface RootLayoutProps {
