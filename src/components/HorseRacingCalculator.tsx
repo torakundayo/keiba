@@ -55,9 +55,15 @@ function HorseInput({
   onStakeChange: (value: number) => void
   onOddChange: (value: number) => void
 }) {
-  const handlers = useSwipeable({
+  // 重み用のスワイプハンドラー
+  const stakeHandlers = useSwipeable({
     onSwipedLeft: () => onStakeChange(Math.max(0, stake - 100)),
     onSwipedRight: () => onStakeChange(stake + 100),
+    trackMouse: true
+  })
+
+  // オッズ用のスワイプハンドラー
+  const oddHandlers = useSwipeable({
     onSwipedUp: () => onOddChange(odd + 0.1),
     onSwipedDown: () => onOddChange(Math.max(1, odd - 0.1)),
     trackMouse: true
@@ -72,7 +78,7 @@ function HorseInput({
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Label className="text-sm text-gray-600 min-w-[50px]">重み</Label>
-            <div {...handlers} className="flex-1">
+            <div {...stakeHandlers} className="flex-1">
               <Slider
                 value={[Math.min(stake, 1000)]}
                 onValueChange={(value) => onStakeChange(value[0])}
@@ -130,7 +136,7 @@ function HorseInput({
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Label className="text-sm text-gray-600 min-w-[50px]">オッズ</Label>
-            <div {...handlers} className="flex-1">
+            <div {...oddHandlers} className="flex-1">
               <Slider
                 value={[Math.min(odd, 100)]}
                 onValueChange={(value) => onOddChange(value[0])}
@@ -447,12 +453,12 @@ export default function TrifectaReturnCalculator() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50 p-6 md:p-12">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-gray-50 px-2 py-6 md:p-12">
       <div className="mx-auto max-w-5xl">
         <div className="relative mb-8 text-center">
-          <h1 className="mb-12 text-center text-5xl font-bold bg-gradient-to-r from-blue-600 to-blue-800
+          <h1 className="mb-12 text-center text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-blue-800
             bg-clip-text text-transparent hover:scale-105 transform transition-all duration-300">
-            3連複期待リターン計算ツール
+            3連複期待リターン<span className="block md:inline">計算ツール</span>
           </h1>
           <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-48 h-1
               bg-gradient-to-r from-transparent via-blue-500 to-transparent"></div>
@@ -462,39 +468,44 @@ export default function TrifectaReturnCalculator() {
             <CardTitle className="flex items-center space-x-3 text-2xl text-blue-800">
               <TbHorse className="h-8 w-8 text-blue-600" />
               <span className="relative group">
-                このツールの目的
+                どういうツール？
                 <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-blue-300 transform
                   scale-x-0 transition-transform duration-300 group-hover:scale-x-100"></div>
               </span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-8">
-            <div className="grid gap-8 md:grid-cols-2">
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-blue-800">使い方</h3>
-                <div className="rounded-xl bg-gradient-to-br from-blue-50 to-white p-6 shadow-sm">
-                  <ol className="list-decimal list-inside space-y-3 text-gray-700">
-                    <li>出走頭数を入力（10～18頭）</li>
-                    <li>各馬の重み（100単位）とオッズを設定</li>
-                    <li>計算ボタンで期待リターンを確認</li>
-                  </ol>
-                </div>
+          <CardContent className="p-5">
+            <div className="space-y-4">
+              <p>
+                このツールは、<strong>3連複馬券の買い目をシミュレーションする</strong>ために作られました。
+                各馬の単勝オッズと掛け金から、理論的な期待リターンを計算し、
+                どの組み合わせに投資価値があるかを判断する指標を提供します。
+              </p>
+              <div className="rounded-lg bg-blue-50 p-3 space-y-3">
+                <p className="font-medium">主なポイント</p>
+                <ul className="list-disc list-inside space-y-2 ml-2">
+                  <li>単勝オッズから「3連複的中確率」を計算</li>
+                  <li>掛け金の配分を考慮した期待リターンを計算</li>
+                  <li>複数の組み合わせを一括で比較・評価可能</li>
+                </ul>
               </div>
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-blue-800">特徴</h3>
-                <div className="rounded-xl bg-gradient-to-br from-blue-50 to-white p-6 shadow-sm">
-                  <ul className="list-disc list-inside space-y-3 text-gray-700">
-                    <li>単勝オッズから3連複を予測</li>
-                    <li>当たりやすさを考慮した期待値計算</li>
-                    <li>複数の組み合わせを一括評価</li>
-                  </ul>
-                </div>
+              <div className="bg-gray-50 p-3 rounded-lg space-y-2">
+                <p className="font-medium">使い方</p>
+                <ol className="list-decimal list-inside space-y-2 ml-2">
+                  <li>出走頭数を入力</li>
+                  <li>各馬の重みとオッズを入力</li>
+                  <li>計算ボタンを押して結果を確認</li>
+                </ol>
               </div>
+              <p className="text-sm text-gray-600">
+                ※このツールは理論的な計算に基づく参考値を提供するものであり、
+                実際の馬券的中や利益を保証するものではありません。
+              </p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="mb-10 shadow-2xl hover:shadow-3xl transition-all duration-500
+        <Card className="mb-10 shadow-[0_0_15px_rgba(0,0,0,0.1)] border border-blue-100 hover:shadow-3xl transition-all duration-500
           border-0 bg-white/90 backdrop-blur-sm">
           <CardHeader className="bg-gradient-to-r from-slate-50/50 via-white to-blue-50/50
             py-8 border-b border-blue-100/50">
@@ -616,7 +627,7 @@ export default function TrifectaReturnCalculator() {
                 <span>計算結果</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-8 p-8 bg-white">
+            <CardContent className="space-y-8 p-5 bg-white">
               <div className="rounded-lg border p-6 space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
@@ -763,26 +774,52 @@ export default function TrifectaReturnCalculator() {
           <CardHeader className="bg-gradient-to-r from-gray-50 via-white to-gray-50 py-8 border-b border-blue-100">
             <CardTitle className="text-2xl text-blue-800">なぜこの結果になるの？</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6 p-8 bg-white">
+          <CardContent className="space-y-6 p-5 bg-white">
             <div className="space-y-6">
 
               {/* 説明部分を更新 */}
               <section className="space-y-4">
-                <h3 className="text-xl font-semibold text-blue-800">簡単な説明</h3>
+                <h3 className="text-xl font-semibold text-blue-800">仕組みの概要</h3>
                 <div className="space-y-4">
-                  <p>
-                    このツールでは、<strong>掛け金と確率を使って「期待リターン」を計算</strong>しています。
-                    期待リターンとは、理論的に期待できる払戻金額のことです。
-                  </p>
-                  <div className="rounded-lg bg-blue-50 p-4 space-y-3">
-                    <p className="font-medium">主なポイント：</p>
-                    <ul className="list-disc list-inside space-y-2 ml-4">
-                      <li>単勝オッズから各馬の「勝つ確率」を推定</li>
-                      <li>その確率を使って3連複の「当たる確率」を計算</li>
-                      <li>確率が高い（＝当たりやすい）組み合わせは重視して評価</li>
-                      <li>確率が低い（＝当たりにくい）組み合わせは軽く評価</li>
-                    </ul>
+                  <div className="rounded-lg bg-blue-50 p-4 space-y-4">
+                    <div className="space-y-2">
+                      <h4 className="font-medium">1. 各馬の能力を推測</h4>
+                      <p className="text-gray-700">
+                        単勝オッズは、その馬が勝つ可能性を表しています。
+                        オッズが低い馬ほど、能力が高く評価されているということです。
+                        例えば、オッズ2倍の馬は、オッズ10倍の馬より5倍程度能力が高いと考えられます。
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-medium">2. 3着以内に入る確率を予測</h4>
+                      <p className="text-gray-700">
+                        能力の高い馬ほど、3着以内に入りやすいと考えられます。
+                        このツールでは、単勝オッズから各馬が3着以内に入る確率を予測します。
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-medium">3. 組み合わせの評価</h4>
+                      <p className="text-gray-700">
+                        3頭の組み合わせごとに、以下の要素を計算します：
+                        <ul className="list-disc list-inside mt-2 ml-4">
+                          <li>その組み合わせが的中する確率</li>
+                          <li>予想される払戻金（オッズ）</li>
+                          <li>掛け金に対する期待リターン</li>
+                        </ul>
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-medium">4. 買い目のシミュレーション</h4>
+                      <p className="text-gray-700">
+                        計算結果を「期待リターン」と「当たりやすさ」の両面から評価し、
+                        各組み合わせの理論的な期待値を提示します。
+                        重みの設定により、特定の馬を重視した計算も可能です。
+                      </p>
+                    </div>
                   </div>
+                  <p className="text-sm text-gray-600">
+                    ※この仕組みは理論的な予測であり、実際のレース結果は様々な要因で変動する可能性があります。
+                  </p>
                 </div>
               </section>
 
