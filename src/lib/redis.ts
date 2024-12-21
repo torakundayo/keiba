@@ -6,8 +6,19 @@ let client: ReturnType<typeof createClient> | null = null
 // 接続関数を修正
 async function getClient() {
   if (!client) {
+    // 本番環境でのTLS接続を強制
+    const url = process.env.REDIS_URL
+    if (!url) {
+      console.warn('Redis URL not configured')
+      return null
+    }
+
     client = createClient({
-      url: process.env.REDIS_URL
+      url: url,
+      socket: {
+        tls: process.env.NODE_ENV === 'production',
+        rejectUnauthorized: false // 本番環境での証明書検証を無効化
+      }
     })
 
     client.on('error', (err) => {
