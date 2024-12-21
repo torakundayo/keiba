@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
-import { Calculator, MessageCircleQuestion, ChevronRight, Info, Plus, Minus } from 'lucide-react'
+import { Calculator, MessageCircleQuestion, ChevronRight, Info, Plus, Minus, Loader2 } from 'lucide-react'
 import { TbHorse } from "react-icons/tb";
 import {
   Tooltip,
@@ -23,6 +23,8 @@ const InlineMath = dynamic(() => import('react-katex').then(mod => mod.InlineMat
 })
 import 'katex/dist/katex.min.css'
 import { useSwipeable } from 'react-swipeable'
+import { useQuery } from '@tanstack/react-query'
+import axios from 'axios'
 
 function combinations<T>(array: T[], r: number): T[][] {
   const result: T[][] = []
@@ -224,9 +226,25 @@ type SortConfig = {
   direction: 'asc' | 'desc';
 } | null;
 
+// 型定義を追加
+type Race = {
+  name: string
+  url: string
+  date: string
+}
+
+type HorseOdds = {
+  name: string
+  odds: number
+}
+
+// APIレスポンスの型を定義
+type RaceResponse = {
+  races: Race[]
+}
+
 export default function TrifectaReturnCalculator() {
   const [step, setStep] = useState(0)
-  const [totalHorses, setTotalHorses] = useState<number>(0)
   const [stakes, setStakes] = useState<number[]>([])
   const [odds, setOdds] = useState<number[]>([])
   const [isClient, setIsClient] = useState(false)
@@ -251,6 +269,7 @@ export default function TrifectaReturnCalculator() {
     key: 'horses',
     direction: 'asc'
   });
+  const [loadingRaceId, setLoadingRaceId] = useState<string | null>(null)
 
   // ソート関数
   const handleSort = (key: keyof CombinationResult) => {
@@ -287,11 +306,47 @@ export default function TrifectaReturnCalculator() {
   }, [results, sortConfig]);
 
   useEffect(() => {
-    setTotalHorses(18)
     setStakes(Array(18).fill(0))
     setOdds(Array(18).fill(1.0))
     setIsClient(true)
   }, [])
+
+  // レース情報の取得
+  const { data: raceData } = useQuery<RaceResponse>({
+    queryKey: ['recentGradeRace'],
+    queryFn: async () => {
+      const response = await axios.get('/api/recent-grade-race')
+      return response.data
+    }
+  })
+
+  // レースの予想オッズを取得する関数を修正
+  const importRaceOdds = async (raceUrl: string) => {
+    try {
+      setLoadingRaceId(raceUrl) // ローディング開始
+      const encodedUrl = encodeURIComponent(raceUrl)
+      const response = await axios.get<HorseOdds[]>(`/api/race-odds/${encodedUrl}`)
+      const horseOdds = response.data
+
+      // 既存の馬番とオッズをリセット
+      const newOdds = Array(18).fill(1.0)
+
+      // 取得したオッズを設定
+      horseOdds.forEach((horse, index) => {
+        if (index < 18) {
+          newOdds[index] = horse.odds
+        }
+      })
+
+      setOdds(newOdds)
+      setStakes(Array(18).fill(0)) // 重みはリセット
+      setResults(null)
+    } catch (error) {
+      console.error('Failed to import odds:', error)
+    } finally {
+      setLoadingRaceId(null) // ローディング終了
+    }
+  }
 
   if (!isClient) {
     return <div>Loading...</div>
@@ -299,146 +354,130 @@ export default function TrifectaReturnCalculator() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (step === 0 && totalHorses >= 10 && totalHorses <= 18) {
-      const initialStakes = Array(totalHorses).fill(0)
-      const initialOdds = Array(totalHorses).fill(1.0)
-      setStakes(initialStakes)
-      setOdds(initialOdds)
-      setStep(1)
-    } else if (step === 1) {
-      calculateResults()
-    }
+    calculateResults()
   }
 
   const calculateResults = () => {
-    if (typeof totalHorses === "number") {
-      // 選択された馬のインデックスを抽出
-      const includedIndices = stakes.map((s, i) => ({ s, i }))
-        .filter(obj => obj.s >= 100)
-        .map(obj => obj.i)
+    // 選択された馬のインデックスを抽出（重みが100以上の馬）
+    const includedIndices = stakes.map((s, i) => ({ s, i }))
+      .filter(obj => obj.s >= 100)
+      .map(obj => obj.i)
 
-      // 3頭未満の場合は計算不可
-      if (includedIndices.length < 3) {
-        setResults(null)
-        return
-      }
-
-      // 選択された馬の掛け金とオッズを抽出
-      const includedStakes = includedIndices.map(i => stakes[i])
-      const includedOdds = includedIndices.map(i => odds[i])
-
-      // 生の確率を計算 (オッズから逆算、0.8は単勝市場の払戻率)
-      const p_raw = includedOdds.map(o => 0.8 / o)
-      // 生の確率の合計
-      const sum_p_raw = p_raw.reduce((acc, v) => acc + v, 0)
-      // 確率を正規化（合計が1になるように）
-      const p_norm = p_raw.map(v => v / sum_p_raw)
-
-      // 3頭組み合わせの配列を生成
-      const combosStakes = combinations(includedStakes, 3)  // 掛け金の組み合わせ
-      const combosOdds = combinations(includedOdds, 3)      // オッズの組み合わせ（難易度計算用）
-      const combosPnorm = combinations(p_norm, 3)           // 正規化確率の組み合わせ（確率計算用）
-
-      // 集計用の変数を初期化
-      let totalStakesAllCombos = 0  // 総掛け金
-      let sumD = 0                  // 難易度の合計
-      let sumWeightedReturn = 0     // 難易度加重期待リターンの合計
-
-      // 各組み合わせの結果を格納する配列
-      const combinationResults: CombinationResult[] = []
-
-      // 各組み合わせについて計算
-      for (let c = 0; c < combosStakes.length; c++) {
-        const comboStakes = combosStakes[c]  // この組み合わせの掛け金
-        const comboOddsSet = combosOdds[c]   // この組み合わせのオッズ
-        const comboP = combosPnorm[c]        // この組み合わせの正規化確率
-
-        // 馬番を1から始まる番号に変換
-        const horses = includedIndices.filter((_, idx) =>
-          combinations(Array.from({ length: includedIndices.length }, (_, i) => i), 3)[c].includes(idx)
-        )
-
-        // この組み合わせの総掛け金を計算
-        const comboStakeSum = comboStakes.reduce((sum, val) => sum + val, 0)
-
-        // 3頭の組み合わせの確率を計算（正規化された確率の積）
-        const P_ijk_raw = comboP.reduce((prod, p) => prod * p, 1)
-        combinationResults.push({
-          horses: horses.map(i => i + 1),
-          stake: comboStakeSum,
-          expectedReturn: 0, // 後で計算
-          approximateOdds: 0, // 後で計算
-          probability: P_ijk_raw  // 一時的に生の確率を保存
-        })
-      }
-
-      // 確率の合計を計算
-      const totalProb = combinationResults.reduce((sum, c) => sum + c.probability, 0)
-
-      // 確率を正規化して期待リターンとオッズを計算
-      for (const combo of combinationResults) {
-        // 確率を正規化
-        const P_ijk = combo.probability / totalProb
-
-        // 3連複オッズを確率から計算（0.75は3連複市場の払戻率）
-        const trifectaOdds = 0.75 / P_ijk
-
-        // 期待リターンを計算
-        const comboReturn = combo.stake * trifectaOdds
-
-        // 結果を更新
-        combo.probability = P_ijk  // 正規化された確率で上書き
-        combo.approximateOdds = trifectaOdds
-        combo.expectedReturn = comboReturn
-      }
-
-      // 難易度の計算と集計
-      for (const combo of combinationResults) {
-        // 難易度を計算（オッズの積の逆数）
-        const productOdds = combosOdds[combinationResults.indexOf(combo)].reduce((prod, o) => prod * o, 1)
-        const D_comb = 1 / productOdds
-
-        // 集計値を更新
-        totalStakesAllCombos += combo.stake
-        sumD += D_comb
-        sumWeightedReturn += combo.expectedReturn * D_comb
-      }
-
-      const weightedReturn = sumD > 0 ? sumWeightedReturn / sumD : 0
-
-      // 最小・最大期待リターンを計算
-      const minReturn = Math.min(...combinationResults.map(c => c.expectedReturn));
-      const maxReturn = Math.max(...combinationResults.map(c => c.expectedReturn));
-      const minReturnCombo = combinationResults.find(c => c.expectedReturn === minReturn);
-      const maxReturnCombo = combinationResults.find(c => c.expectedReturn === maxReturn);
-
-      setResults({
-        totalStakes: totalStakesAllCombos,
-        weightedReturn: weightedReturn,
-        combinations: combinationResults,
-        minReturn: {
-          value: minReturn,
-          horses: minReturnCombo?.horses || [],
-          odds: minReturnCombo?.approximateOdds || 0
-        },
-        maxReturn: {
-          value: maxReturn,
-          horses: maxReturnCombo?.horses || [],
-          odds: maxReturnCombo?.approximateOdds || 0
-        }
-      });
-
-      // 計算結果までスクロール
-      setTimeout(() => {
-        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
+    // 3頭未満の場合は計算不可
+    if (includedIndices.length < 3) {
+      setResults(null)
+      return
     }
-  }
-  const handleTotalHorsesChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setTotalHorses(parseInt(e.target.value) || 0)
-    setStakes([])
-    setOdds([])
-    setResults(null)
+
+    // 選択された馬の掛け金とオッズを抽出
+    const includedStakes = includedIndices.map(i => stakes[i])
+    const includedOdds = includedIndices.map(i => odds[i])
+
+    // 生の確率を計算 (オッズから逆算、0.8は単勝市場の払戻率)
+    const p_raw = includedOdds.map(o => 0.8 / o)
+    // 生の確率の合計
+    const sum_p_raw = p_raw.reduce((acc, v) => acc + v, 0)
+    // 確率を正規化（合計が1になるように）
+    const p_norm = p_raw.map(v => v / sum_p_raw)
+
+    // 3頭組み合わせの配列を生成
+    const combosStakes = combinations(includedStakes, 3)  // 掛け金の組み合わせ
+    const combosOdds = combinations(includedOdds, 3)      // オッズの組み合わせ（難易度計算用）
+    const combosPnorm = combinations(p_norm, 3)           // 正規化確率の組み合わせ（確率計算用）
+
+    // 集計用の変数を初期化
+    let totalStakesAllCombos = 0  // 総掛け金
+    let sumD = 0                  // 難易度の合計
+    let sumWeightedReturn = 0     // 難易度加重期待リターンの合計
+
+    // 各組み合わせの結果を格納する配列
+    const combinationResults: CombinationResult[] = []
+
+    // 各組み合わせについて計算
+    for (let c = 0; c < combosStakes.length; c++) {
+      const comboStakes = combosStakes[c]  // この組み合わせの掛け金
+      const comboOddsSet = combosOdds[c]   // この組み合わせのオッズ
+      const comboP = combosPnorm[c]        // この組み合わせの正規化確率
+
+      // 馬番を1から始まる番号に変換
+      const horses = includedIndices.filter((_, idx) =>
+        combinations(Array.from({ length: includedIndices.length }, (_, i) => i), 3)[c].includes(idx)
+      )
+
+      // この組み合わせの総掛け金を計算
+      const comboStakeSum = comboStakes.reduce((sum, val) => sum + val, 0)
+
+      // 3頭の組み合わせの確率を計算（正規化された確率の積）
+      const P_ijk_raw = comboP.reduce((prod, p) => prod * p, 1)
+      combinationResults.push({
+        horses: horses.map(i => i + 1),
+        stake: comboStakeSum,
+        expectedReturn: 0, // 後で計算
+        approximateOdds: 0, // 後で計算
+        probability: P_ijk_raw  // 一時的に生の確率を保存
+      })
+    }
+
+    // 確率の合計を計算
+    const totalProb = combinationResults.reduce((sum, c) => sum + c.probability, 0)
+
+    // 確率を正規化して期待リターンとオッズを計算
+    for (const combo of combinationResults) {
+      // 確率を正規化
+      const P_ijk = combo.probability / totalProb
+
+      // 3連複オッズを確率から計算（0.75は3連複市場の払戻率）
+      const trifectaOdds = 0.75 / P_ijk
+
+      // 期待リターンを計算
+      const comboReturn = combo.stake * trifectaOdds
+
+      // 結果を更新
+      combo.probability = P_ijk  // 正規化された確率で上書き
+      combo.approximateOdds = trifectaOdds
+      combo.expectedReturn = comboReturn
+    }
+
+    // 難易度の計算と集計
+    for (const combo of combinationResults) {
+      // 難易度を計算（オッズの積の逆数）
+      const productOdds = combosOdds[combinationResults.indexOf(combo)].reduce((prod, o) => prod * o, 1)
+      const D_comb = 1 / productOdds
+
+      // 集計値を更新
+      totalStakesAllCombos += combo.stake
+      sumD += D_comb
+      sumWeightedReturn += combo.expectedReturn * D_comb
+    }
+
+    const weightedReturn = sumD > 0 ? sumWeightedReturn / sumD : 0
+
+    // 最小・最大期待リターンを計算
+    const minReturn = Math.min(...combinationResults.map(c => c.expectedReturn));
+    const maxReturn = Math.max(...combinationResults.map(c => c.expectedReturn));
+    const minReturnCombo = combinationResults.find(c => c.expectedReturn === minReturn);
+    const maxReturnCombo = combinationResults.find(c => c.expectedReturn === maxReturn);
+
+    setResults({
+      totalStakes: totalStakesAllCombos,
+      weightedReturn: weightedReturn,
+      combinations: combinationResults,
+      minReturn: {
+        value: minReturn,
+        horses: minReturnCombo?.horses || [],
+        odds: minReturnCombo?.approximateOdds || 0
+      },
+      maxReturn: {
+        value: maxReturn,
+        horses: maxReturnCombo?.horses || [],
+        odds: maxReturnCombo?.approximateOdds || 0
+      }
+    });
+
+    // 計算結果までスクロール
+    setTimeout(() => {
+      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   }
 
   const handleStakeChange = (index: number, value: number) => {
@@ -499,7 +538,6 @@ export default function TrifectaReturnCalculator() {
               <div className="rounded-xl bg-blue-50/50 p-4 md:p-6 space-y-3">
                 <h4 className="text-[16px] md:text-lg font-medium text-blue-900">使い方</h4>
                 <ol className="list-decimal list-inside space-y-2 ml-2">
-                  <li>出走頭数を入力</li>
                   <li>各馬の重みとオッズを入力</li>
                   <li>計算ボタンを押して結果を確認</li>
                 </ol>
@@ -519,106 +557,99 @@ export default function TrifectaReturnCalculator() {
             <CardTitle className="text-xl md:text-2xl text-blue-900 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Calculator className="h-5 w-5 md:h-7 md:w-7 text-blue-600" />
-                <span>{step === 0 ? "Step1： 出走頭数入力" : "Step2： 各馬の設定"}</span>
+                <span>シミュレーションする</span>
               </div>
-              {step === 1 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="relative group px-3 md:px-6 py-1 md:py-2 text-sm md:text-base text-blue-700 hover:text-blue-900
-                    hover:bg-blue-100/50 transition-all duration-300"
-                  onClick={() => {
-                    setStep(0)
-                    setStakes([])
-                    setOdds([])
-                    setResults(null)
-                  }}
-                >
-                  <ChevronRight className="h-3.5 w-3.5 md:h-5 md:w-5 rotate-180 mr-1 md:mr-2
-                    group-hover:-translate-x-1 transition-transform duration-200" />
-                  <span className="whitespace-nowrap text-sm md:text-base">Step1に戻る</span>
-                </Button>
-              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 md:p-8">
+            {raceData?.races && (
+              <div className="mb-8">
+                <h3 className="text-lg font-medium text-gray-700 mb-3">
+                  直近の重賞レース
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  以下のレースのオッズをインポートできます。インポートしたオッズは手動で調整可能です。
+                </p>
+                <div className="flex flex-col gap-3">
+                  {raceData.races.map((race) => (
+                    <button
+                      key={race.date}
+                      type="button"
+                      onClick={() => importRaceOdds(race.url)}
+                      disabled={loadingRaceId === race.url}
+                      className="group relative w-full bg-white hover:bg-blue-50
+                        border border-blue-200 rounded-xl overflow-hidden transition-all duration-200
+                        shadow-sm hover:shadow-md disabled:cursor-not-allowed"
+                    >
+                      <div className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-blue-600 mb-1">
+                              {race.date}
+                            </p>
+                            <p className="text-lg font-medium text-gray-800">
+                              {race.name}
+                            </p>
+                          </div>
+                          <div className="flex items-center text-blue-500 group-hover:text-blue-600">
+                            {loadingRaceId === race.url ? (
+                              <div className="flex items-center text-blue-600">
+                                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                                <span className="text-sm">インポート中...</span>
+                              </div>
+                            ) : (
+                              <>
+                                <span className="text-sm mr-2">オッズをインポート</span>
+                                <ChevronRight className="h-5 w-5" />
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600
+                        transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
-              {step === 0 ? (
-                <div className="space-y-4">
-                  <Label className="text-lg font-medium text-blue-900 block">
-                    出走頭数: {totalHorses}頭
-                  </Label>
-                  <div className="max-w-lg mx-auto px-8">
-                    <Slider
-                      value={[totalHorses]}
-                      onValueChange={(value) => setTotalHorses(value[0])}
-                      min={10}
-                      max={18}
-                      step={1}
-                      className="my-6"
+              <div className="space-y-6">
+                {/* 馬の入力フォーム */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
+                  {Array.from({ length: 18 }).map((_, i) => (
+                    <HorseInput
+                      key={i}
+                      index={i}
+                      stake={stakes[i]}
+                      odd={odds[i]}
+                      onStakeChange={(value) => handleStakeChange(i, value)}
+                      onOddChange={(value) => handleOddChange(i, value)}
                     />
-                  </div>
-                  <p className="text-sm text-blue-500 text-center">
-                    ※10頭～18頭で設定してください
-                  </p>
+                  ))}
                 </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* ナビゲーションヘッダー */}
-                  <div className="flex items-center gap-4">
-                  </div>
-
-                  {/* レース情報と入力ガイド */}
-                  <div className="!mt-0">
-                    {/* レース情報 */}
-                    <div className="text-sm text-blue-700 flex items-center gap-2">
-                      <TbHorse className="h-4 w-4" />
-                      <span>出走頭数: {totalHorses}頭</span>
-                    </div>
-                  </div>
-
-                  {/* 馬の入力フォーム */}
-                  {typeof totalHorses === "number" && totalHorses > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
-                      {Array.from({ length: totalHorses }).map((_, i) => (
-                        <HorseInput
-                          key={i}
-                          index={i}
-                          stake={stakes[i]}
-                          odd={odds[i]}
-                          onStakeChange={(value) => handleStakeChange(i, value)}
-                          onOddChange={(value) => handleOddChange(i, value)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+              </div>
 
               <div className="flex justify-end space-x-4 mt-8">
-                {step === 1 && (
-                  <Button
-                    type="button"
-                    className="bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-200
-                      shadow-md hover:shadow-xl px-6 py-2 rounded-xl"
-                    onClick={() => {
-                      if (typeof totalHorses === "number") {
-                        setStakes(Array(totalHorses).fill(0))
-                        setOdds(Array(totalHorses).fill(1.0))
-                      }
-                      setResults(null)
-                    }}
-                  >
-                    リセット
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  className="bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-200
+                    shadow-md hover:shadow-xl px-6 py-2 rounded-xl"
+                  onClick={() => {
+                    setStakes(Array(18).fill(0))
+                    setOdds(Array(18).fill(1.0))
+                    setResults(null)
+                  }}
+                >
+                  リセット
+                </Button>
                 <Button
                   type="submit"
                   className="min-w-[140px] bg-blue-600 hover:bg-blue-700 transition-all duration-200
                     shadow-md hover:shadow-xl active:translate-y-0
                     text-white font-medium px-6 py-2 rounded-xl"
                 >
-                  {step === 0 ? "次へ" : "計算する"}
+                  計算する
                 </Button>
               </div>
             </form>
@@ -751,19 +782,19 @@ export default function TrifectaReturnCalculator() {
                       <tbody>
                         {sortedCombinations.map((combo, index) => (
                           <tr key={index} className="border-b border-gray-100 hover:bg-gray-50/50">
-                            <td className="text-left p-2 md:p-3 text-xs md:text-base">
+                            <td className="text-left p-[5px] md:px-[10px] md:py-[6px] text-xs md:text-base">
                               {combo.horses.join('-')}
                             </td>
-                            <td className="text-left p-2 md:p-3 text-xs md:text-base">
+                            <td className="text-right p-[5px] md:px-[10px] md:py-[6px] text-xs md:text-base">
                               {combo.stake.toLocaleString()}<span className="text-[10px] md:text-[14px]">円</span>
                             </td>
-                            <td className="text-left p-2 md:p-3 text-xs md:text-base">
+                            <td className="text-right p-[5px] md:px-[10px] md:py-[6px] text-xs md:text-base">
                               {combo.approximateOdds.toFixed(1)}
                             </td>
-                            <td className="text-left p-2 md:p-3 text-xs md:text-base">
+                            <td className="text-right p-[5px] md:px-[10px] md:py-[6px] text-xs md:text-base">
                               {Math.round(combo.expectedReturn).toLocaleString()}<span className="text-[10px] md:text-[14px]">円</span>
                             </td>
-                            <td className="text-left p-2 md:p-3 text-xs md:text-base">
+                            <td className="text-right p-[5px] md:px-[10px] md:py-[6px] text-xs md:text-base">
                               {(combo.probability * 100).toFixed(2)}<span className="text-[10px] md:text-[14px]">%</span>
                             </td>
                           </tr>
@@ -773,11 +804,6 @@ export default function TrifectaReturnCalculator() {
                   </div>
                 )}
               </div>
-
-              <p className="text-sm text-gray-600">
-                加重平均期待リターンは、(0.75/P_ijk)で近似した3連複オッズを用い、
-                オッズ積逆数で加重平均した結果です。
-              </p>
             </CardContent>
           </Card>
         )}

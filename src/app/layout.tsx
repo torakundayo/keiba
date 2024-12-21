@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { TooltipProvider } from "@/components/ui/tooltip"
 import 'katex/dist/katex.min.css';
+import { Providers } from "@/components/Providers";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -23,9 +23,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="ja" className={inter.variable}>
       <body className="min-h-screen bg-background font-sans antialiased">
-        <TooltipProvider>
+        <Providers>
           {children}
-        </TooltipProvider>
+        </Providers>
       </body>
     </html>
   )
