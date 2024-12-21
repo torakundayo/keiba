@@ -534,9 +534,9 @@ export default function TrifectaReturnCalculator() {
                     setResults(null)
                   }}
                 >
-                  <ChevronRight className="h-4 w-4 md:h-5 md:w-5 rotate-180 mr-1 md:mr-2
+                  <ChevronRight className="h-3.5 w-3.5 md:h-5 md:w-5 rotate-180 mr-1 md:mr-2
                     group-hover:-translate-x-1 transition-transform duration-200" />
-                  <span className="whitespace-nowrap">Step1に戻る</span>
+                  <span className="whitespace-nowrap text-sm md:text-base">Step1に戻る</span>
                 </Button>
               )}
             </CardTitle>
@@ -704,7 +704,7 @@ export default function TrifectaReturnCalculator() {
                             {
                               key: 'probability',
                               label: (
-                                <div className="flex items-center justify-end gap-1">
+                                <div className="flex items-center gap-1">
                                   確率
                                   <div className="hidden md:block">
                                     <TooltipProvider>
@@ -726,18 +726,18 @@ export default function TrifectaReturnCalculator() {
                               key={key}
                               onClick={() => handleSort(key as keyof CombinationResult)}
                               className={`
-                                ${key === 'horses' ? 'text-left' : 'text-right'}
-                                p-1 md:p-4
+                                text-left
+                                p-1 md:p-3
                                 text-xs md:text-base
                                 font-medium
+                                text-blue-800
                                 cursor-pointer
                                 hover:bg-blue-100/50
                                 transition-colors
                               `}
                             >
-                              <div className={`flex items-center gap-1 ${key === 'horses' ? 'justify-start' : 'justify-end'}`}>
+                              <div className="flex items-center gap-1">
                                 {label}
-                                {/* ソートされているカラムのみ矢印を表示 */}
                                 {sortConfig?.key === key && (
                                   <span className="text-blue-600">
                                     {sortConfig.direction === 'asc' ? '↑' : '↓'}
@@ -751,19 +751,19 @@ export default function TrifectaReturnCalculator() {
                       <tbody>
                         {sortedCombinations.map((combo, index) => (
                           <tr key={index} className="border-b border-gray-100 hover:bg-gray-50/50">
-                            <td className="text-left p-2 md:p-4 text-xs md:text-base">
+                            <td className="text-left p-2 md:p-3 text-xs md:text-base">
                               {combo.horses.join('-')}
                             </td>
-                            <td className="text-right p-2 md:p-4 text-xs md:text-base">
+                            <td className="text-left p-2 md:p-3 text-xs md:text-base">
                               {combo.stake.toLocaleString()}<span className="text-[10px] md:text-[14px]">円</span>
                             </td>
-                            <td className="text-right p-2 md:p-4 text-xs md:text-base">
+                            <td className="text-left p-2 md:p-3 text-xs md:text-base">
                               {combo.approximateOdds.toFixed(1)}
                             </td>
-                            <td className="text-right p-2 md:p-4 text-xs md:text-base">
+                            <td className="text-left p-2 md:p-3 text-xs md:text-base">
                               {Math.round(combo.expectedReturn).toLocaleString()}<span className="text-[10px] md:text-[14px]">円</span>
                             </td>
-                            <td className="text-right p-2 md:p-4 text-xs md:text-base">
+                            <td className="text-left p-2 md:p-3 text-xs md:text-base">
                               {(combo.probability * 100).toFixed(2)}<span className="text-[10px] md:text-[14px]">%</span>
                             </td>
                           </tr>
