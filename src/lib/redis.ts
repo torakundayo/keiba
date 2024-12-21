@@ -17,13 +17,26 @@ async function getClient() {
       url: url,
       socket: {
         tls: process.env.NODE_ENV === 'production',
-        rejectUnauthorized: false // 本番環境での証明書検証を無効化
+        rejectUnauthorized: false,
+        connectTimeout: 10000,
+        keepAlive: 5000,
+        reconnectStrategy: (retries, cause) => {
+          if (retries > 10) {
+            console.warn('Max redis reconnection attempts reached')
+            return false
+          }
+          return Math.min(retries * 100, 3000)
+        }
       }
     })
 
     client.on('error', (err) => {
       console.warn('Redis connection warning:', err)
-      client = null // エラー時にクライアントをリセット
+      client = null
+    })
+
+    client.on('connect', () => {
+      console.log('Redis connected successfully')
     })
   }
 
