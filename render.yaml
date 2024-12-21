@@ -8,5 +8,13 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-    autoDeploy: true
-    branch: main
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: your-redis-instance
+          property: connectionString
+
+  - type: redis
+    name: your-redis-instance
+    ipAllowList: []
+    plan: free
