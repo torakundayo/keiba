@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import 'katex/dist/katex.min.css';
 import { Providers } from "@/components/Providers";
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <Providers>
           {children}
         </Providers>
+        <Toaster />
       </body>
     </html>
   )
