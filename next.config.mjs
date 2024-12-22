@@ -3,10 +3,13 @@ const nextConfig = {
   output: 'standalone',
   poweredByHeader: false,
   reactStrictMode: true,
-  generateStaticParams: async () => {
-    return {
-      excludePages: ['/api/**']
-    }
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: '/api/:path*',
+      },
+    ]
   }
 }
 

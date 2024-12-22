@@ -48,12 +48,14 @@ function HorseInput({
   index,
   stake,
   odd,
+  horseName,
   onStakeChange,
   onOddChange
 }: {
   index: number
   stake: number
   odd: number
+  horseName: string
   onStakeChange: (value: number) => void
   onOddChange: (value: number) => void
 }) {
@@ -81,7 +83,12 @@ function HorseInput({
 
   return (
     <div className="bg-white rounded-xl shadow p-4 space-y-3">
-      <span className="text-xl font-bold text-blue-900">{index + 1}番</span>
+      <div className="flex items-center justify-between">
+        <span className="text-base font-bold text-blue-900">{index + 1}番</span>
+        {horseName && (
+          <span className="text-base font-bold text-blue-900">{horseName}</span>
+        )}
+      </div>
 
       <div className="space-y-4">
         {/* 重みの入力 */}
@@ -247,6 +254,7 @@ export default function TrifectaReturnCalculator() {
   const [step, setStep] = useState(0)
   const [stakes, setStakes] = useState<number[]>([])
   const [odds, setOdds] = useState<number[]>([])
+  const [horseNames, setHorseNames] = useState<string[]>([])
   const [isClient, setIsClient] = useState(false)
   const [results, setResults] = useState<{
     totalStakes: number
@@ -308,37 +316,51 @@ export default function TrifectaReturnCalculator() {
   useEffect(() => {
     setStakes(Array(18).fill(0))
     setOdds(Array(18).fill(1.0))
+    setHorseNames(Array(18).fill(''))
     setIsClient(true)
   }, [])
 
   // レース情報の取得
-  const { data: raceData } = useQuery<RaceResponse>({
+  const { data: raceData, error: raceError } = useQuery<RaceResponse>({
     queryKey: ['recentGradeRace'],
     queryFn: async () => {
-      const response = await axios.get('/api/recent-grade-race')
-      return response.data
+      try {
+        const response = await axios.get('/api/recent-grade-race')
+        console.log('Race data response:', response.data) // デバッグ用
+        return response.data
+      } catch (error) {
+        console.error('Failed to fetch race data:', error)
+        throw error
+      }
     }
   })
+
+  // エラー表示を追加
+  if (raceError) {
+    console.error('Race data error:', raceError)
+  }
 
   // レースの予想オッズを取得する関数を修正
   const importRaceOdds = async (raceUrl: string) => {
     try {
       setLoadingRaceId(raceUrl) // ローディング開始
       const encodedUrl = encodeURIComponent(raceUrl)
-      const response = await axios.get<HorseOdds[]>(`/api/race-odds/${encodedUrl}`)
+      const response = await axios.get<Array<{ name: string; odds: number }>>(`/api/race-odds/${encodedUrl}`)
       const horseOdds = response.data
 
-      // 既存の馬番とオッズをリセット
       const newOdds = Array(18).fill(1.0)
+      const newHorseNames = Array(18).fill('')
 
       // 取得したオッズを設定
       horseOdds.forEach((horse, index) => {
         if (index < 18) {
           newOdds[index] = horse.odds
+          newHorseNames[index] = horse.name
         }
       })
 
       setOdds(newOdds)
+      setHorseNames(newHorseNames)
       setStakes(Array(18).fill(0)) // 重みはリセット
       setResults(null)
     } catch (error) {
@@ -579,7 +601,9 @@ export default function TrifectaReturnCalculator() {
                       disabled={loadingRaceId === race.url}
                       className="group relative w-full bg-white hover:bg-blue-50
                         border border-blue-200 rounded-xl overflow-hidden transition-all duration-200
-                        shadow-sm hover:shadow-md disabled:cursor-not-allowed"
+                        shadow-sm hover:shadow-md disabled:cursor-not-allowed
+                        active:scale-[0.98] active:bg-blue-100 md:active:scale-100 md:active:bg-white
+                        tap-highlight-none"
                     >
                       <div className="p-4">
                         <div className="flex items-center justify-between">
@@ -607,7 +631,7 @@ export default function TrifectaReturnCalculator() {
                         </div>
                       </div>
                       <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600
-                        transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200" />
+                        transform scale-x-0 md:group-hover:scale-x-100 transition-transform duration-200" />
                     </button>
                   ))}
                 </div>
@@ -623,6 +647,7 @@ export default function TrifectaReturnCalculator() {
                       index={i}
                       stake={stakes[i]}
                       odd={odds[i]}
+                      horseName={horseNames[i]}
                       onStakeChange={(value) => handleStakeChange(i, value)}
                       onOddChange={(value) => handleOddChange(i, value)}
                     />
@@ -638,6 +663,7 @@ export default function TrifectaReturnCalculator() {
                   onClick={() => {
                     setStakes(Array(18).fill(0))
                     setOdds(Array(18).fill(1.0))
+                    setHorseNames(Array(18).fill(''))
                     setResults(null)
                   }}
                 >

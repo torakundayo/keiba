@@ -47,10 +47,10 @@ export async function GET(
 
       // 馬名があれば、オッズの有無に関わらず配列に追加
       if (horseName) {
-        const odds = oddsText ? parseFloat(oddsText) : 0
+        const odds = oddsText ? parseFloat(oddsText) : 1.0
         horseOdds.push({
           name: horseName,
-          odds: isNaN(odds) ? 0 : odds
+          odds: isNaN(odds) ? 1.0 : odds
         })
       }
     }

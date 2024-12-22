@@ -11,10 +11,10 @@ services:
       - key: REDIS_URL
         fromService:
           type: redis
-          name: your-redis-instance
+          name: horse-racing-calculator-redis
           property: connectionString
 
   - type: redis
-    name: your-redis-instance
+    name: horse-racing-calculator-redis
     ipAllowList: []
     plan: free
