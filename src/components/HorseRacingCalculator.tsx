@@ -462,9 +462,8 @@ export default function TrifectaReturnCalculator() {
 
     // 難易度の計算と集計
     for (const combo of combinationResults) {
-      // 難易度を計算（オッズの積の逆数）
-      const productOdds = combosOdds[combinationResults.indexOf(combo)].reduce((prod, o) => prod * o, 1)
-      const D_comb = 1 / productOdds
+      // 難易度をP_ijkで表現
+      const D_comb = combo.probability
 
       // 集計値を更新
       totalStakesAllCombos += combo.stake
@@ -1044,22 +1043,12 @@ export default function TrifectaReturnCalculator() {
                     <p className="font-medium">難易度加重の計算</p>
                     <div className="overflow-x-auto">
                       <div className="min-w-[400px]">
-                        <BlockMath math="\text{難易度加重期待リターン} = \frac{\sum (\text{期待リターン} \times D_{\text{comb}})}{\sum D_{\text{comb}}}" />
-                      </div>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <div className="min-w-[300px]">
-                        <BlockMath math="D_{\text{comb}} = \frac{1}{O_i \times O_j \times O_k}" />
+                        <BlockMath math="\text{難易度加重期待リターン} = \frac{\sum (\text{期待リターン} \times P_{ijk})}{\sum P_{ijk}}" />
                       </div>
                     </div>
                     <div className="space-y-2"></div>
-                    <p className="font-medium">ここで</p>
-                    <ul className="list-disc list-inside space-y-1 ml-4 [&>li]:marker:mr-[10px]">
-                      <li><InlineMath math="D_{\text{comb}}" />：難易度係数（当たりやすさの指標）</li>
-                      <li><InlineMath math="O_i, O_j, O_k" />：組み合わせに含まれる3頭の単勝オッズ</li>
-                    </ul>
                     <p className="mt-4">
-                      オッズが低い（＝人気がある＝当たりやすい）組み合わせほど<InlineMath math="D_{\text{comb}}" />は大きくなり、
+                      的中確率が高い（＝当たりやすい）組み合わせほど<InlineMath math="P_{ijk}" />は大きくなり、
                       最終的な評価により大きく反映されます。これにより、現実的な組み合わせがより高く評価されます。
                     </p>
                   </div>
