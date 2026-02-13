@@ -32,7 +32,7 @@ export async function GET() {
 
     let upcomingRaces: Race[] = []
 
-    $('#mainWrap > div > div > div.raceTableWrap > table > tbody > tr').each((index, tr) => {
+    $('div.raceTableWrap table.DbTable tr.dispRow').each((index, tr) => {
       if (upcomingRaces.length >= 3) return false
 
       const dateText = $(tr).find('td:first-child').text().trim()
@@ -46,11 +46,14 @@ export async function GET() {
       const today = currentMonth * 100 + currentDay
 
       if (raceDate >= today) {
-        const raceName = $(tr).find('td.bold > a').text().trim()
-        const baseUrl = $(tr).find('td.bold > a').attr('href')
+        const boldTd = $(tr).find('td.bold')
+        const link = boldTd.find('a')
+        const raceName = link.length > 0 ? link.text().trim() : ''
+        const baseUrl = link.attr('href')
 
         if (raceName && baseUrl) {
-          const raceUrl = `https://www.keibalab.jp${baseUrl}/umabashira.html?kind=yoko`
+          // baseUrl is like /db/race/202602150511/ — already ends with /
+          const raceUrl = `https://www.keibalab.jp${baseUrl}umabashira.html?kind=yoko`
           const formattedDate = `${currentYear}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`
 
           upcomingRaces.push({
