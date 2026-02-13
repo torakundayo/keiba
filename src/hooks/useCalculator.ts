@@ -180,8 +180,8 @@ export function useCalculator() {
         throw new Error('有効な馬が3頭未満です。重みを100以上に設定した馬を3頭以上選択してください。')
       }
 
-      if (validHorseIndices.length > 6) {
-        throw new Error('計算量が多すぎます。重みを100以上に設定した馬を6頭以下に制限してください。')
+      if (validHorseIndices.length > 8) {
+        throw new Error('計算量が多すぎます。重みを100以上に設定した馬を8頭以下に制限してください。')
       }
 
       const { optimalStakes, optimalResults, maxExpectedValue } = await optimizeStakes(
