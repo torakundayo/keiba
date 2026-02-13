@@ -23,8 +23,13 @@ export const calculateResultsForStakes = (
     const p_norm = p_raw.map(v => v / sum_p_raw)
 
     const combosStakes = combinations(includedStakes, 3)
-    const combosOdds = combinations(includedOdds, 3)
     const combosPnorm = combinations(p_norm, 3)
+
+    // インデックスの組み合わせをループ外で1回だけ生成
+    const indexCombos = combinations(
+      Array.from({ length: includedIndices.length }, (_, i) => i),
+      3
+    )
 
     let totalStakesAllCombos = 0
     let sumD = 0
@@ -36,9 +41,8 @@ export const calculateResultsForStakes = (
       const comboStakes = combosStakes[c]
       const comboP = combosPnorm[c]
 
-      const horses = includedIndices.filter((_, idx) =>
-        combinations(Array.from({ length: includedIndices.length }, (_, i) => i), 3)[c].includes(idx)
-      )
+      // 事前計算したインデックス組み合わせから馬番を取得
+      const horses = indexCombos[c].map(idx => includedIndices[idx])
 
       const comboStakeSum = comboStakes.reduce((sum, val) => sum + val, 0)
       const P_ijk_raw = comboP.reduce((prod, p) => prod * p, 1)
