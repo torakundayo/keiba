@@ -5,6 +5,7 @@ import "./globals.css";
 import 'katex/dist/katex.min.css';
 import { Providers } from "@/components/Providers";
 import { Toaster } from "@/components/ui/toaster"
+import { Navigation } from "@/components/Navigation"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="ja" className={inter.variable}>
       <body className="min-h-screen bg-background font-sans antialiased">
         <Providers>
+          <Navigation />
           {children}
         </Providers>
         <Toaster />

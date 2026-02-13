@@ -6,8 +6,6 @@ import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { ExplanationCard } from './ExplanationCard'
 import { SimulationForm } from './SimulationForm'
 import { ResultsSection } from './ResultsSection'
-import { MathExplanation } from './MathExplanation'
-import { InsightCard } from './InsightCard'
 
 export default function TrifectaReturnCalculator() {
   const {
@@ -93,8 +91,6 @@ export default function TrifectaReturnCalculator() {
           />
         )}
 
-        <MathExplanation />
-        <InsightCard />
       </div>
     </div>
   )
