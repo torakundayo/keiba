@@ -1,6 +1,6 @@
 "use client"
 
-import { useCalculator } from '@/hooks/useCalculator'
+import { useCalculatorContext } from '@/contexts/CalculatorContext'
 import { useRaceData } from '@/hooks/useRaceData'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { ExplanationCard } from './ExplanationCard'
@@ -32,7 +32,7 @@ export default function TrifectaReturnCalculator() {
     handleOddChange,
     calculateOptimalStakes,
     resetAll,
-  } = useCalculator()
+  } = useCalculatorContext()
 
   const { data: raceData, error: raceError } = useRaceData()
   const isDesktop = useMediaQuery('(min-width: 768px)')
