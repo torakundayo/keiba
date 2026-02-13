@@ -1,15 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
-  poweredByHeader: false,
   reactStrictMode: true,
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: '/api/:path*',
-      },
-    ]
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'katex$': 'katex/dist/katex.mjs',
+    }
+    return config
   }
 }
 

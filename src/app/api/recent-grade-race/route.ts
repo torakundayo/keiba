@@ -1,21 +1,10 @@
 import { NextResponse } from 'next/server'
 import * as cheerio from 'cheerio'
-import { getCache, setCache } from '@/lib/redis'
 
-// このルートは動的であることを明示
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    // キャッシュをチェック
-    const cached = await getCache('recent-races')
-    if (cached) {
-      console.log('🚀 Using cached race data')
-      return NextResponse.json(cached)
-    }
-
-    console.log('🔄 Fetching fresh race data from web...')
-    // 競馬ラボの重賞レーススケジュールページにアクセス
     const response = await fetch('https://www.keibalab.jp/db/race/grade.html')
 
     if (!response.ok) {
@@ -23,8 +12,6 @@ export async function GET() {
     }
 
     const html = await response.text()
-
-    // cheerioでHTMLをパース
     const $ = cheerio.load(html)
 
     // 今日の日付を取得（日本時間）
@@ -45,7 +32,6 @@ export async function GET() {
 
     let upcomingRaces: Race[] = []
 
-    // テーブルの各行を走査
     $('#mainWrap > div > div > div.raceTableWrap > table > tbody > tr').each((index, tr) => {
       if (upcomingRaces.length >= 3) return false
 
@@ -56,7 +42,6 @@ export async function GET() {
       const month = parseInt(dateMatch[1], 10)
       const day = parseInt(dateMatch[2], 10)
 
-      // 日付の比較（月日を数値化して比較）
       const raceDate = month * 100 + day
       const today = currentMonth * 100 + currentDay
 
@@ -65,7 +50,6 @@ export async function GET() {
         const baseUrl = $(tr).find('td.bold > a').attr('href')
 
         if (raceName && baseUrl) {
-          // ベースURLを追加してフルURLを構築
           const raceUrl = `https://www.keibalab.jp${baseUrl}/umabashira.html?kind=yoko`
           const formattedDate = `${currentYear}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`
 
@@ -85,11 +69,15 @@ export async function GET() {
       )
     }
 
-    // キャッシュに保存
-    await setCache('recent-races', { races: upcomingRaces })
-    console.log('💾 Race data cached successfully')
-
-    return NextResponse.json({ races: upcomingRaces }, { status: 200 })
+    return NextResponse.json(
+      { races: upcomingRaces },
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=3600'
+        }
+      }
+    )
   } catch (error) {
     console.error('Error fetching races:', error)
     return NextResponse.json(
