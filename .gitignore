@@ -43,3 +43,6 @@ next-env.d.ts
 # Build output
 .next
 out
+
+# Backtest cache (large, regeneratable)
+/data/backtest-cache.json

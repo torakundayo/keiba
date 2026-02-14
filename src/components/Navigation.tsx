@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Calculator, BookOpen, Lightbulb } from 'lucide-react'
+import { Calculator, BookOpen, Lightbulb, FlaskConical } from 'lucide-react'
 
 const navItems = [
   { href: '/', label: '買い目分析', icon: Calculator },
   { href: '/explanation', label: '計算方法', icon: BookOpen },
   { href: '/insight', label: '考察', icon: Lightbulb },
+  { href: '/backtest', label: '検証', icon: FlaskConical },
 ]
 
 export function Navigation() {
