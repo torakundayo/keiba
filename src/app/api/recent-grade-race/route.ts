@@ -53,7 +53,7 @@ export async function GET() {
 
         if (raceName && baseUrl) {
           // baseUrl is like /db/race/202602150511/ — already ends with /
-          const raceUrl = `https://www.keibalab.jp${baseUrl}umabashira.html?kind=yoko`
+          const raceUrl = `https://www.keibalab.jp${baseUrl}odds.html`
           const formattedDate = `${currentYear}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`
 
           upcomingRaces.push({

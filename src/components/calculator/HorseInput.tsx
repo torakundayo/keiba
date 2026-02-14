@@ -1,224 +1,64 @@
 "use client"
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Slider } from '@/components/ui/slider'
-import { Plus, Minus } from 'lucide-react'
-import { useSwipeable } from 'react-swipeable'
+import { Checkbox } from '@/components/ui/checkbox'
+import type { PlaceOdds } from '@/lib/calculator/types'
 
 type HorseInputProps = {
   index: number
-  stake: number
+  included: boolean
   odd: number
   horseName: string
-  onStakeChange: (value: number) => void
+  placeOdds: PlaceOdds
+  onToggle: () => void
   onOddChange: (value: number) => void
 }
 
 export function HorseInput({
   index,
-  stake,
+  included,
   odd,
   horseName,
-  onStakeChange,
-  onOddChange,
+  placeOdds,
+  onToggle,
 }: HorseInputProps) {
-  const [sliderValue, setSliderValue] = useState(stake)
-
-  useEffect(() => {
-    setSliderValue(stake)
-  }, [stake])
-
-  const stakeHandlers = useSwipeable({
-    onSwipedLeft: () => onStakeChange(Math.max(0, stake - 100)),
-    onSwipedRight: () => onStakeChange(stake + 100),
-    trackMouse: true,
-  })
-
-  const oddHandlers = useSwipeable({
-    onSwipedUp: () => onOddChange(odd + 0.1),
-    onSwipedDown: () => onOddChange(Math.max(1, odd - 0.1)),
-    trackMouse: true,
-  })
+  const placeMid = placeOdds?.low > 0
+    ? (placeOdds.low + placeOdds.high) / 2
+    : 0
+  const placeProb = placeMid > 0 ? 0.80 / placeMid : 0
+  const stability = placeMid > 0 ? odd / placeMid : 0
 
   return (
-    <div className={`${stake === 0 ? 'bg-gray-100' : 'bg-white'
-      } rounded-xl shadow p-3 md:p-4 space-y-2 md:space-y-3 transition-colors duration-200`}>
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] md:text-base font-bold text-white md:text-blue-900 bg-blue-800 md:bg-transparent rounded px-1.5 py-0.5 md:p-0">
-          <span className="md:hidden">{index + 1}</span>
-          <span className="hidden md:inline">{index + 1}番</span>
+    <div
+      className={`${!included ? 'opacity-40' : ''
+        } bg-white rounded-lg border border-slate-100 p-2.5 space-y-1 transition-colors cursor-pointer hover:bg-slate-50`}
+      onClick={onToggle}
+    >
+      <div className="flex items-center gap-2">
+        <div onClick={(e) => e.stopPropagation()}>
+          <Checkbox checked={included} onCheckedChange={onToggle} />
+        </div>
+        <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-slate-800 text-white text-[10px] font-medium tabular-nums">
+          {index + 1}
         </span>
         {horseName && (
-          <span className="text-sm md:text-base font-bold text-blue-900 truncate ml-2">{horseName}</span>
+          <span className="text-sm text-slate-700 truncate">{horseName}</span>
         )}
       </div>
 
-      <div className="space-y-3 md:space-y-4">
-        {/* 重みの入力 */}
-        <div className="space-y-1 md:space-y-2">
-          <div className="flex items-center gap-0.5 md:gap-2">
-            <Label className="text-xs md:text-sm text-gray-600 min-w-[40px] md:min-w-[50px]">重み</Label>
-            <div {...stakeHandlers} className="flex-1">
-              <Slider
-                value={[Math.min(stake, 1000)]}
-                onValueChange={(value) => onStakeChange(value[0])}
-                min={0}
-                max={1000}
-                step={100}
-                className="w-full"
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-1 md:gap-2 justify-end ml-[40px] md:ml-[50px]">
-            <div className="hidden md:flex items-center gap-1 md:gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => onStakeChange(Math.max(0, stake - 100))}
-                className="w-[60px] md:w-[70px] h-[32px] md:h-[37px]"
-              >
-                <Minus className="h-3 w-3 md:h-4 md:w-4" />
-              </Button>
-            </div>
-            <Input
-              type="number"
-              min={0}
-              step={100}
-              value={stake}
-              onChange={(e) => {
-                const value = parseInt(e.target.value)
-                if (!isNaN(value) && value >= 0) {
-                  onStakeChange(value)
-                }
-              }}
-              onWheel={(e) => {
-                e.preventDefault()
-                if (document.activeElement === e.currentTarget) {
-                  const delta = e.deltaY > 0 ? -100 : 100
-                  const newValue = Math.max(0, stake + delta)
-                  onStakeChange(newValue)
-                }
-              }}
-              className="text-center w-[70px] md:w-[80px] h-[32px] md:h-[37px] text-sm md:text-base"
-            />
-            <div className="md:hidden flex flex-col -space-y-px">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => onStakeChange(stake + 100)}
-                className="w-[32px] h-[16px] rounded-b-none border-b-0"
-              >
-                <Plus className="h-3 w-3" />
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => onStakeChange(Math.max(0, stake - 100))}
-                className="w-[32px] h-[16px] rounded-t-none"
-              >
-                <Minus className="h-3 w-3" />
-              </Button>
-            </div>
-            <div className="hidden md:block">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => onStakeChange(stake + 100)}
-                className="w-[60px] md:w-[70px] h-[32px] md:h-[37px]"
-              >
-                <Plus className="h-3 w-3 md:h-4 md:w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* オッズの入力 */}
-        <div className="space-y-1 md:space-y-2">
-          <div className="flex items-center gap-0.5 md:gap-2">
-            <Label className="text-xs md:text-sm text-gray-600 min-w-[40px] md:min-w-[50px]">オッズ</Label>
-            <div {...oddHandlers} className="flex-1">
-              <Slider
-                value={[Math.min(odd, 100)]}
-                onValueChange={(value) => onOddChange(value[0])}
-                min={1.0}
-                max={100.0}
-                step={0.1}
-                className="w-full"
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-1 md:gap-2 justify-end ml-[40px] md:ml-[50px]">
-            <div className="hidden md:flex items-center gap-1 md:gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => onOddChange(Math.max(1, odd - 0.1))}
-                className="w-[60px] md:w-[70px] h-[32px] md:h-[37px]"
-              >
-                <Minus className="h-3 w-3 md:h-4 md:w-4" />
-              </Button>
-            </div>
-            <Input
-              type="number"
-              min={1.0}
-              step={0.1}
-              value={Number(odd).toFixed(1)}
-              onChange={(e) => {
-                const value = parseFloat(e.target.value)
-                if (!isNaN(value) && value >= 1.0) {
-                  onOddChange(value)
-                }
-              }}
-              onWheel={(e) => {
-                e.preventDefault()
-                if (document.activeElement === e.currentTarget) {
-                  const delta = e.deltaY > 0 ? -0.1 : 0.1
-                  onOddChange(Math.max(1, odd + delta))
-                }
-              }}
-              className="text-center w-[70px] md:w-[80px] h-[32px] md:h-[37px] text-sm md:text-base"
-            />
-            <div className="md:hidden flex flex-col -space-y-px">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => onOddChange(odd + 0.1)}
-                className="w-[32px] h-[16px] rounded-b-none border-b-0"
-              >
-                <Plus className="h-3 w-3" />
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => onOddChange(Math.max(1, odd - 0.1))}
-                className="w-[32px] h-[16px] rounded-t-none"
-              >
-                <Minus className="h-3 w-3" />
-              </Button>
-            </div>
-            <div className="hidden md:block">
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => onOddChange(odd + 0.1)}
-                className="w-[60px] md:w-[70px] h-[32px] md:h-[37px]"
-              >
-                <Plus className="h-3 w-3 md:h-4 md:w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
+      <div className="text-xs text-slate-500 space-y-0.5 pl-6 tabular-nums">
+        {placeProb > 0 && (
+          <p>複勝確率: <span className={placeProb > 0.5 ? 'text-emerald-700' : 'text-slate-600'}>
+            {(placeProb * 100).toFixed(1)}%
+          </span></p>
+        )}
+        {stability > 0 && (
+          <p>安定度: <span className={stability > 3 ? 'text-emerald-700' : 'text-slate-600'}>
+            {stability.toFixed(1)}
+          </span></p>
+        )}
+        {odd > 1.0 && (
+          <p>単勝: {odd.toFixed(1)} / 複勝: {placeOdds?.low > 0 ? `${placeOdds.low}-${placeOdds.high}` : '-'}</p>
+        )}
       </div>
     </div>
   )

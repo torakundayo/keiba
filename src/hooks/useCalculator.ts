@@ -1,52 +1,54 @@
-import { useState, useRef, useMemo, useEffect } from 'react'
-import { useToast } from '@/components/ui/use-toast'
+import { useState, useRef, useMemo, useEffect, useCallback } from 'react'
+import type { RecommendationTier } from '@/lib/calculator/types'
 import { calculateResultsForStakes } from '@/lib/calculator/calculateResults'
-import { optimizeStakes } from '@/lib/calculator/optimizeStakes'
-import { combinations } from '@/lib/calculator/combinations'
 import type {
   CalculationResult,
   CombinationResult,
   SortConfig,
-  OptimizationProgress,
+  PlaceOdds,
 } from '@/lib/calculator/types'
 import axios from 'axios'
+
+const DEFAULT_PLACE_ODDS: PlaceOdds = { low: 0, high: 0 }
 
 export function useCalculator() {
   const [step, setStep] = useState(0)
   const [stakes, setStakes] = useState<number[]>([])
   const [odds, setOdds] = useState<number[]>([])
+  const [placeOdds, setPlaceOdds] = useState<PlaceOdds[]>([])
   const [horseNames, setHorseNames] = useState<string[]>([])
   const [isClient, setIsClient] = useState(false)
   const [results, setResults] = useState<CalculationResult | null>(null)
   const resultsRef = useRef<HTMLDivElement>(null)
   const [displayMode, setDisplayMode] = useState<'card' | 'table'>('table')
   const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: 'horses',
+    key: 'tier',
     direction: 'asc',
   })
   const [loadingRaceId, setLoadingRaceId] = useState<string | null>(null)
-  const [isAutoCalculating, setIsAutoCalculating] = useState(false)
-  const [optimalResult, setOptimalResult] = useState<{
-    stakes: number[]
-    expectedValue: number
-    weightedReturn: number
-    totalStakes: number
-  } | null>(null)
-  const [progress, setProgress] = useState<OptimizationProgress | null>(null)
-  const { toast } = useToast()
   const [showAllResults, setShowAllResults] = useState(false)
+  const [activeRaceUrl, setActiveRaceUrl] = useState<string | null>(null)
+  const [activeRaceName, setActiveRaceName] = useState('')
+  const [activeRaceDate, setActiveRaceDate] = useState('')
+  const [tierFilter, setTierFilter] = useState<string>('all')
 
-  // ソート関数
+  const TIER_ORDER: Record<string, number> = {
+    recommended: 0,
+    promising: 1,
+    solid: 2,
+    longshot: 3,
+    avoid: 4,
+  }
+
   const handleSort = (key: keyof CombinationResult) => {
     setSortConfig((currentConfig) => {
       if (!currentConfig || currentConfig.key !== key) {
-        return { key, direction: 'asc' }
+        return { key, direction: key === 'tier' ? 'asc' : 'desc' }
       }
       return { key, direction: currentConfig.direction === 'asc' ? 'desc' : 'asc' }
     })
   }
 
-  // ソートされた結果を取得
   const sortedCombinations = useMemo(() => {
     if (!results || !sortConfig) return results?.combinations || []
 
@@ -59,6 +61,14 @@ export function useCalculator() {
           : bStr.localeCompare(aStr)
       }
 
+      if (sortConfig.key === 'tier') {
+        const tierDiff = TIER_ORDER[a.tier] - TIER_ORDER[b.tier]
+        const dir = sortConfig.direction === 'asc' ? 1 : -1
+        if (tierDiff !== 0) return tierDiff * dir
+        // 同じtier内は確率降順
+        return b.probability - a.probability
+      }
+
       const aValue = a[sortConfig.key]
       const bValue = b[sortConfig.key]
       return sortConfig.direction === 'asc'
@@ -67,35 +77,87 @@ export function useCalculator() {
     })
   }, [results, sortConfig])
 
+  const filteredCombinations = useMemo(() => {
+    if (tierFilter === 'all') return sortedCombinations
+    return sortedCombinations.filter(c => c.tier === tierFilter)
+  }, [sortedCombinations, tierFilter])
+
   useEffect(() => {
-    setStakes(Array(18).fill(100))
+    setStakes(Array(18).fill(0))
     setOdds(Array(18).fill(1.0))
+    setPlaceOdds(Array(18).fill(DEFAULT_PLACE_ODDS))
     setHorseNames(Array(18).fill(''))
     setIsClient(true)
   }, [])
 
-  // レースの予想オッズを取得する関数
-  const importRaceOdds = async (raceUrl: string) => {
+  // 自動計算: stakes, odds, placeOdds が変わるたびに再計算
+  const runCalculation = useCallback((
+    currentStakes: number[],
+    currentOdds: number[],
+    currentPlaceOdds: PlaceOdds[],
+    currentHorseNames: string[],
+  ) => {
+    const includedCount = currentStakes.filter(s => s >= 100).length
+    if (includedCount < 3) {
+      setResults(null)
+      return
+    }
+    try {
+      const result = calculateResultsForStakes(currentStakes, currentOdds, currentPlaceOdds, currentHorseNames)
+      setResults(result)
+    } catch {
+      setResults(null)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isClient || stakes.length === 0) return
+    runCalculation(stakes, odds, placeOdds, horseNames)
+  }, [stakes, odds, placeOdds, horseNames, isClient, runCalculation])
+
+  const importRaceOdds = async (raceUrl: string, raceName?: string, raceDate?: string) => {
     try {
       setLoadingRaceId(raceUrl)
       const encodedUrl = encodeURIComponent(raceUrl)
-      const response = await axios.get<Array<{ name: string; odds: number }>>(`/api/race-odds/${encodedUrl}`)
-      const horseOdds = response.data
+      const response = await axios.get<Array<{
+        name: string
+        odds: number
+        placeOddsLow: number
+        placeOddsHigh: number
+      }>>(`/api/race-odds/${encodedUrl}`)
+      const horseOddsData = response.data
 
       const newOdds = Array(18).fill(1.0)
+      const newPlaceOdds: PlaceOdds[] = Array(18).fill(null).map(() => ({ low: 0, high: 0 }))
       const newHorseNames = Array(18).fill('')
 
-      horseOdds.forEach((horse, index) => {
+      horseOddsData.forEach((horse, index) => {
         if (index < 18) {
           newOdds[index] = horse.odds
+          newPlaceOdds[index] = { low: horse.placeOddsLow, high: horse.placeOddsHigh }
           newHorseNames[index] = horse.name
         }
       })
 
+      // 有効なデータがある馬だけ自動的に含める
+      const newStakes = Array(18).fill(0)
+      horseOddsData.forEach((horse, index) => {
+        if (index < 18 && horse.odds > 1.0) {
+          newStakes[index] = 100
+        }
+      })
+
+      // レースメタデータを保存
+      setActiveRaceUrl(raceUrl)
+      setActiveRaceName(raceName ?? '')
+      setActiveRaceDate(raceDate ?? '')
+      setTierFilter('all')
+
+      // 一括更新（useEffectが自動計算する）
       setOdds(newOdds)
+      setPlaceOdds(newPlaceOdds)
       setHorseNames(newHorseNames)
-      setStakes(Array(18).fill(100))
-      setResults(null)
+      setStakes(newStakes)
     } catch (error) {
       console.error('Failed to import odds:', error)
     } finally {
@@ -103,58 +165,12 @@ export function useCalculator() {
     }
   }
 
-  // calculateResults関数
-  const calculateResults = () => {
-    const includedIndices = stakes.map((s, i) => ({ s, i }))
-      .filter(obj => obj.s >= 100)
-      .map(obj => obj.i)
-
-    if (includedIndices.length < 3) {
-      setResults(null)
-      return null
-    }
-
-    try {
-      const result = calculateResultsForStakes(stakes, odds)
-      if (result) {
-        setResults(result)
-        return result
-      } else {
-        setResults(null)
-        return null
-      }
-    } catch (error) {
-      console.error('Error in calculateResults:', error)
-      setResults(null)
-      return null
-    }
-  }
-
-  // handleSubmit関数
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const result = calculateResults()
-
-    if (result) {
-      setTimeout(() => {
-        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 100)
-    } else {
-      toast({
-        title: '計算できません',
-        description: '3頭以上の馬を選択してください（重みを100以上に設定）',
-        variant: 'destructive',
-      })
-    }
-  }
-
-  const handleStakeChange = (index: number, value: number) => {
+  const toggleHorse = (index: number) => {
     setStakes(prev => {
       const newArr = [...prev]
-      newArr[index] = value
+      newArr[index] = newArr[index] >= 100 ? 0 : 100
       return newArr
     })
-    setResults(null)
   }
 
   const handleOddChange = (index: number, value: number) => {
@@ -163,82 +179,25 @@ export function useCalculator() {
       newArr[index] = value
       return newArr
     })
-    setResults(null)
-  }
-
-  const calculateOptimalStakes = async () => {
-    try {
-      setIsAutoCalculating(true)
-      setProgress(null)
-
-      const validHorseIndices = stakes
-        .map((stake, index) => ({ stake, index }))
-        .filter(({ stake }) => stake >= 100)
-        .map(({ index }) => index)
-
-      if (validHorseIndices.length < 3) {
-        throw new Error('有効な馬が3頭未満です。重みを100以上に設定した馬を3頭以上選択してください。')
-      }
-
-      if (validHorseIndices.length > 8) {
-        throw new Error('計算量が多すぎます。重みを100以上に設定した馬を8頭以下に制限してください。')
-      }
-
-      const { optimalStakes, optimalResults, maxExpectedValue } = await optimizeStakes(
-        validHorseIndices,
-        odds,
-        (progress, bestValue) => {
-          setProgress({
-            current: Math.floor(progress * 100),
-            total: 100,
-            bestValue,
-          })
-        }
-      )
-
-      setOptimalResult({
-        stakes: optimalStakes,
-        expectedValue: maxExpectedValue,
-        weightedReturn: optimalResults.weightedReturn,
-        totalStakes: optimalResults.totalStakes,
-      })
-
-      setStakes(optimalStakes)
-      setResults(optimalResults)
-
-      setTimeout(() => {
-        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 100)
-    } catch (error) {
-      console.error('Optimization error:', error)
-
-      toast({
-        title: '最適化に失敗しました',
-        description: error instanceof Error ? error.message : '予期せぬエラーが発生しました',
-        variant: 'destructive',
-      })
-
-      setOptimalResult(null)
-      setProgress(null)
-    } finally {
-      setIsAutoCalculating(false)
-      setProgress(null)
-    }
   }
 
   const resetAll = () => {
-    setStakes(Array(18).fill(100))
+    setStakes(Array(18).fill(0))
     setOdds(Array(18).fill(1.0))
+    setPlaceOdds(Array(18).fill(null).map(() => ({ low: 0, high: 0 })))
     setHorseNames(Array(18).fill(''))
     setResults(null)
-    setOptimalResult(null)
+    setActiveRaceUrl(null)
+    setActiveRaceName('')
+    setActiveRaceDate('')
+    setTierFilter('all')
   }
 
   return {
-    // State
     step,
     stakes,
     odds,
+    placeOdds,
     horseNames,
     isClient,
     results,
@@ -247,21 +206,20 @@ export function useCalculator() {
     setDisplayMode,
     sortConfig,
     loadingRaceId,
-    isAutoCalculating,
-    setIsAutoCalculating,
-    optimalResult,
-    progress,
     showAllResults,
     setShowAllResults,
     sortedCombinations,
+    filteredCombinations,
+    activeRaceUrl,
+    activeRaceName,
+    activeRaceDate,
+    tierFilter,
+    setTierFilter,
 
-    // Handlers
     handleSort,
     importRaceOdds,
-    handleSubmit,
-    handleStakeChange,
+    toggleHorse,
     handleOddChange,
-    calculateOptimalStakes,
     resetAll,
   }
 }

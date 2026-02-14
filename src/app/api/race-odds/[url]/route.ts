@@ -24,21 +24,32 @@ export async function GET(
     const html = await response.text()
     const $ = cheerio.load(html)
 
-    const horseOdds: { name: string; odds: number }[] = []
+    const horseOdds: { name: string; odds: number; placeOddsLow: number; placeOddsHigh: number }[] = []
 
-    for (let i = 1; i <= 18; i++) {
-      const row = $(`#top > table > tbody > tr:nth-child(${i})`)
-      const horseName = row.find('td.bameiBox.noWrap > dl > dd.bamei3 > a').text().trim()
-      const oddsText = row.find('td.umaboddsBox > dl > dd:nth-child(2) > i').text().trim()
+    // odds.html の #oddsTanTable から単勝・複勝を取得
+    // 構造: 枠番 | 馬番 | 馬名 | 単勝 | 複勝低 | - | 複勝高 | 人気
+    $('#oddsTanTable tbody tr').each((_, row) => {
+      const tds = $(row).find('td')
+      if (tds.length < 7) return
+
+      const horseName = $(tds[2]).text().trim()
+      const winOddsText = $(tds[3]).find('i').text().trim()
+      const placeOddsLowText = $(tds[4]).find('i').text().trim()
+      const placeOddsHighText = $(tds[6]).find('i').text().trim()
 
       if (horseName) {
-        const odds = oddsText ? parseFloat(oddsText) : 1.0
+        const winOdds = parseFloat(winOddsText) || 1.0
+        const placeOddsLow = parseFloat(placeOddsLowText) || 0
+        const placeOddsHigh = parseFloat(placeOddsHighText) || 0
+
         horseOdds.push({
           name: horseName,
-          odds: isNaN(odds) ? 1.0 : odds
+          odds: winOdds,
+          placeOddsLow,
+          placeOddsHigh,
         })
       }
-    }
+    })
 
     if (horseOdds.length === 0) {
       throw new Error('No horses found')

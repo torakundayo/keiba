@@ -1,26 +1,23 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Calculator, Loader2, X } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Calculator, X } from 'lucide-react'
 import { HorseInput } from './HorseInput'
 import { RacePickerCard } from './RacePickerCard'
-import type { Race, OptimizationProgress } from '@/lib/calculator/types'
+import type { Race, PlaceOdds } from '@/lib/calculator/types'
 
 type SimulationFormProps = {
   races: Race[] | undefined
   stakes: number[]
   odds: number[]
+  placeOdds: PlaceOdds[]
   horseNames: string[]
   loadingRaceId: string | null
-  isAutoCalculating: boolean
-  progress: OptimizationProgress | null
   onImportOdds: (raceUrl: string) => void
-  onStakeChange: (index: number, value: number) => void
+  onToggleHorse: (index: number) => void
   onOddChange: (index: number, value: number) => void
-  onSubmit: (e: React.FormEvent) => void
-  onOptimize: () => void
-  onSetIsAutoCalculating: (value: boolean) => void
   onReset: () => void
 }
 
@@ -28,110 +25,180 @@ export function SimulationForm({
   races,
   stakes,
   odds,
+  placeOdds,
   horseNames,
   loadingRaceId,
-  isAutoCalculating,
-  progress,
   onImportOdds,
-  onStakeChange,
+  onToggleHorse,
   onOddChange,
-  onSubmit,
-  onOptimize,
-  onSetIsAutoCalculating,
   onReset,
 }: SimulationFormProps) {
+  const hasData = (i: number) => odds[i] > 1.0 || horseNames[i] !== ''
+  const anyDataLoaded = Array.from({ length: 18 }).some((_, i) => hasData(i))
+  const hasPlaceData = placeOdds.some(p => p?.low > 0 && p?.high > 0)
+  const includedCount = stakes.filter(s => s >= 100).length
+
+  const analysisMap = new Map<number, { placeProb: number; stability: number }>()
+  if (anyDataLoaded && hasPlaceData) {
+    for (let i = 0; i < 18; i++) {
+      if (hasData(i) && placeOdds[i]?.low > 0) {
+        const placeMid = (placeOdds[i].low + placeOdds[i].high) / 2
+        analysisMap.set(i, {
+          placeProb: 0.80 / placeMid,
+          stability: odds[i] / placeMid,
+        })
+      }
+    }
+  }
+
   return (
-    <Card className="mb-10 shadow-2xl border-0 rounded-xl overflow-hidden">
-      <CardHeader className="bg-blue-500 py-4">
-        <CardTitle className="text-xl md:text-2xl text-white flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Calculator className="h-5 w-5 md:h-7 md:w-7 text-white" />
-            <span>シミュレーションする</span>
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6 md:py-8 md:px-8 md:pt-6">
-        {races && (
-          <RacePickerCard
-            races={races}
-            loadingRaceId={loadingRaceId}
-            onImportOdds={onImportOdds}
-          />
-        )}
-
-        <p className="text-sm text-gray-600 mb-3">
-          自動最適化機能は、各馬の重みを自動で調整し、期待値が最も高くなる組み合わせを探索します。
-          計算には時間がかかる場合があります。
-        </p>
-
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
-          <Button
-            type="button"
-            disabled={false}
-            onClick={() => {
-              if (isAutoCalculating) {
-                onSetIsAutoCalculating(false)
-              } else {
-                onOptimize()
-              }
-            }}
-            className="w-full md:w-auto bg-green-600 hover:bg-green-700 transition-all duration-200
-              shadow-md hover:shadow-xl active:translate-y-0
-              text-white font-medium px-6 py-2 rounded-xl disabled:opacity-50"
-          >
-            {isAutoCalculating ? (
-              <div className="flex items-center justify-center">
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                <span>
-                  {progress
-                    ? `最適化中... ${Math.round(progress.current / progress.total * 100)}%（クリックで中止）`
-                    : '最適化中...（クリックで中止）'}
-                </span>
+    <Card className="mb-10 card-elevated-lg border-0 rounded-2xl overflow-hidden bg-white">
+      <CardContent className="p-0">
+        {/* Header */}
+        <div className="px-6 py-4 md:px-8 md:py-5 border-b border-slate-100 bg-gradient-to-r from-slate-800 to-slate-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/10">
+                <Calculator className="h-5 w-5 text-amber-300" />
               </div>
-            ) : (
-              '自動最適化を実行'
-            )}
-          </Button>
-
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onReset}
-            className="w-full md:w-auto text-gray-600 hover:text-gray-800"
-          >
-            <X className="h-4 w-4 mr-2" />
-            全ての設定をリセット
-          </Button>
-        </div>
-
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4 max-w-6xl mx-auto">
-              {Array.from({ length: 18 }).map((_, i) => (
-                <HorseInput
-                  key={i}
-                  index={i}
-                  stake={stakes[i]}
-                  odd={odds[i]}
-                  horseName={horseNames[i]}
-                  onStakeChange={(value) => onStakeChange(i, value)}
-                  onOddChange={(value) => onOddChange(i, value)}
-                />
-              ))}
+              <span className="font-serif text-lg md:text-xl font-semibold text-white">
+                シミュレーションする
+              </span>
             </div>
           </div>
+        </div>
 
-          <div className="flex justify-end space-x-4 mt-8">
+        <div className="p-5 md:py-7 md:px-8">
+          {races && (
+            <RacePickerCard
+              races={races}
+              loadingRaceId={loadingRaceId}
+              onImportOdds={onImportOdds}
+            />
+          )}
+
+          {analysisMap.size > 0 && (
+            <p className="text-xs text-slate-400 mb-3 leading-relaxed">
+              複勝確率 = 3着以内に来る確率。安定度 = 単勝÷複勝で、高いほど3連複向き。来ないと思う馬のチェックを外して候補を絞り込んでください。
+            </p>
+          )}
+
+          <div className="flex items-center justify-between mb-5">
+            <p className="text-sm text-slate-500">
+              選択中: <span className="font-bold text-amber-600 tabular-nums">{includedCount}</span> 頭
+              {includedCount < 3 && <span className="text-rose-500 ml-2 text-xs">（3頭以上を選択）</span>}
+            </p>
             <Button
-              type="submit"
-              className="min-w-[140px] bg-blue-600 hover:bg-blue-700 transition-all duration-200
-                shadow-md hover:shadow-xl active:translate-y-0
-                text-white font-medium px-6 py-2 rounded-xl"
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onReset}
+              className="text-slate-500 hover:text-slate-700 border-slate-200 hover:border-slate-300 rounded-lg"
             >
-              計算する
+              <X className="h-3.5 w-3.5 mr-1.5" />
+              リセット
             </Button>
           </div>
-        </form>
+
+          <div className="space-y-6">
+            {/* Mobile: card layout */}
+            <div className="grid grid-cols-2 gap-2.5 md:hidden">
+              {Array.from({ length: 18 }, (_, i) => i)
+                .filter(i => !anyDataLoaded || hasData(i))
+                .map((i) => (
+                  <HorseInput
+                    key={i}
+                    index={i}
+                    included={stakes[i] >= 100}
+                    odd={odds[i]}
+                    horseName={horseNames[i]}
+                    placeOdds={placeOdds[i]}
+                    onToggle={() => onToggleHorse(i)}
+                    onOddChange={(value) => onOddChange(i, value)}
+                  />
+                ))}
+            </div>
+
+            {/* Desktop: table layout */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b-2 border-slate-100">
+                    <th className="text-center p-3 w-[40px] text-xs font-semibold text-slate-400 uppercase tracking-wider">選択</th>
+                    <th className="text-left p-3 w-[40px] text-xs font-semibold text-slate-400 uppercase tracking-wider">#</th>
+                    <th className="text-left p-3 w-[120px] text-xs font-semibold text-slate-400 uppercase tracking-wider">馬名</th>
+                    <th className="text-center p-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">単勝</th>
+                    <th className="text-center p-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">複勝</th>
+                    <th className="text-center p-3 w-[80px] text-xs font-semibold text-slate-400 uppercase tracking-wider">複勝確率</th>
+                    <th className="text-center p-3 w-[60px] text-xs font-semibold text-slate-400 uppercase tracking-wider">安定度</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: 18 }, (_, i) => i)
+                    .filter(i => !anyDataLoaded || hasData(i))
+                    .map((i) => {
+                      const included = stakes[i] >= 100
+                      const analysis = analysisMap.get(i)
+                      return (
+                        <tr
+                          key={i}
+                          className={`border-b border-slate-50 transition-colors duration-200 cursor-pointer ${
+                            !included ? 'opacity-40' : 'hover:bg-amber-50/30'
+                          }`}
+                          onClick={() => onToggleHorse(i)}
+                        >
+                          <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={included}
+                              onCheckedChange={() => onToggleHorse(i)}
+                            />
+                          </td>
+                          <td className="p-3">
+                            <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-800 text-white text-xs font-bold tabular-nums">
+                              {i + 1}
+                            </span>
+                          </td>
+                          <td className="p-3 text-sm font-medium text-slate-800 truncate max-w-[120px]">
+                            {horseNames[i] || '-'}
+                          </td>
+                          <td className="p-3 text-center text-sm tabular-nums text-slate-600">
+                            {odds[i] > 1.0 ? odds[i].toFixed(1) : '-'}
+                          </td>
+                          <td className="p-3 text-center text-sm tabular-nums text-slate-500">
+                            {placeOdds[i]?.low > 0
+                              ? `${placeOdds[i].low}-${placeOdds[i].high}`
+                              : '-'}
+                          </td>
+                          <td className="p-3 text-center text-sm font-medium tabular-nums">
+                            {analysis ? (
+                              <span className={`font-bold ${
+                                analysis.placeProb > 0.5 ? 'text-emerald-600' :
+                                analysis.placeProb > 0.3 ? 'text-sky-600' :
+                                'text-slate-400'
+                              }`}>
+                                {(analysis.placeProb * 100).toFixed(1)}%
+                              </span>
+                            ) : '-'}
+                          </td>
+                          <td className="p-3 text-center text-sm font-medium tabular-nums">
+                            {analysis ? (
+                              <span className={`font-bold ${
+                                analysis.stability > 3 ? 'text-emerald-600' :
+                                analysis.stability > 2 ? 'text-sky-600' :
+                                'text-slate-400'
+                              }`}>
+                                {analysis.stability.toFixed(1)}
+                              </span>
+                            ) : '-'}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )

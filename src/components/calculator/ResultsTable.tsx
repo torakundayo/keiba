@@ -1,15 +1,16 @@
 "use client"
 
-import { Button } from '@/components/ui/button'
-import { Info } from 'lucide-react'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { ChevronUp, ChevronDown } from 'lucide-react'
 import type { CombinationResult, SortConfig } from '@/lib/calculator/types'
 import { RESULTS_PER_PAGE } from '@/lib/calculator/types'
+
+const TIER_LABELS = {
+  recommended: { text: '推奨', className: 'bg-emerald-100 text-emerald-700' },
+  promising: { text: '有望', className: 'bg-teal-100 text-teal-700' },
+  solid: { text: '堅実', className: 'bg-sky-100 text-sky-700' },
+  longshot: { text: '穴狙い', className: 'bg-amber-100 text-amber-700' },
+  avoid: { text: '非推奨', className: 'bg-slate-100 text-slate-500' },
+} as const
 
 type ResultsTableProps = {
   sortedCombinations: CombinationResult[]
@@ -24,55 +25,38 @@ export function ResultsTable({
   sortedCombinations,
   sortConfig,
   showAllResults,
-  resultsRef,
   onSort,
-  onSetShowAll,
 }: ResultsTableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-base md:text-lg">
+      <table className="w-full text-sm">
         <thead>
-          <tr className="bg-blue-50/80">
+          <tr className="border-b border-slate-200">
             {[
               { key: 'horses', label: '組合せ' },
-              { key: 'stake', label: '掛け金' },
+              { key: 'tier', label: '推奨度' },
+              { key: 'ev', label: '割安度' },
+              { key: 'comboStability', label: '安定度積' },
+              { key: 'probability', label: '確率' },
               { key: 'approximateOdds', label: '予想オッズ' },
-              { key: 'expectedReturn', label: '期待リターン' },
-              {
-                key: 'probability',
-                label: (
-                  <div className="flex items-center gap-1">
-                    確率
-                    <div className="hidden md:block">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Info className="h-4 w-4 text-blue-500" />
-                          </TooltipTrigger>
-                          <TooltipContent className="text-left max-w-[300px] p-3 text-sm font-normal">
-                            Harvilleモデルによる確率推定です。単純積モデルとの差が大きい組み合わせほど、期待値が0.75から乖離します。
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                  </div>
-                ),
-              },
             ].map(({ key, label }) => (
               <th
                 key={key}
                 onClick={() => onSort(key as keyof CombinationResult)}
                 className={`
-                  cursor-pointer p-2 md:p-3 text-left text-sm md:text-base font-medium text-gray-600
-                  hover:text-blue-600 transition-colors duration-200
-                  ${key === 'horses' ? 'text-left' : 'text-right'}
+                  cursor-pointer p-2.5 text-xs text-slate-400
+                  hover:text-slate-600 transition-colors
+                  ${key === 'horses' || key === 'tier' ? 'text-left' : 'text-right'}
                 `}
               >
-                <div className="flex items-center gap-1 justify-end">
+                <div className={`flex items-center gap-1 ${key === 'horses' || key === 'tier' ? 'justify-start' : 'justify-end'}`}>
                   {label}
                   {sortConfig?.key === key && (
-                    <span className="text-blue-600">
-                      {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                    <span className="text-slate-600">
+                      {sortConfig.direction === 'asc'
+                        ? <ChevronUp className="h-3 w-3" />
+                        : <ChevronDown className="h-3 w-3" />
+                      }
                     </span>
                   )}
                 </div>
@@ -83,56 +67,43 @@ export function ResultsTable({
         <tbody>
           {sortedCombinations
             .slice(0, showAllResults ? undefined : RESULTS_PER_PAGE.desktop)
-            .map((combo, index) => (
-              <tr key={index} className="border-b border-gray-100 hover:bg-gray-50/50">
-                <td className="text-left p-[5px] md:px-[10px] md:py-[6px] text-xs md:text-base">
-                  {combo.horses.join('-')}
-                </td>
-                <td className="text-right p-[5px] md:px-[10px] md:py-[6px] text-xs md:text-base">
-                  {combo.stake.toLocaleString()}<span className="text-[10px] md:text-[14px]">円</span>
-                </td>
-                <td className="text-right p-[5px] md:px-[10px] md:py-[6px] text-xs md:text-base">
-                  {combo.approximateOdds.toFixed(1)}
-                </td>
-                <td className="text-right p-[5px] md:px-[10px] md:py-[6px] text-xs md:text-base">
-                  {Math.round(combo.expectedReturn).toLocaleString()}<span className="text-[10px] md:text-[14px]">円</span>
-                </td>
-                <td className="text-right p-[5px] md:px-[10px] md:py-[6px] text-xs md:text-base">
-                  {(combo.probability * 100).toFixed(2)}<span className="text-[10px] md:text-[14px]">%</span>
-                </td>
-              </tr>
-            ))}
+            .map((combo, index) => {
+              const tierInfo = TIER_LABELS[combo.tier]
+              return (
+                <tr key={index} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${
+                  (combo.tier === 'recommended' || combo.tier === 'promising') && combo.probability < 0.001 ? 'opacity-50' : ''
+                }`}>
+                  <td className="text-left p-2.5 text-sm font-medium text-slate-700 tabular-nums">
+                    {combo.horses.join('-')}
+                  </td>
+                  <td className="p-2.5">
+                    <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold ${tierInfo.className}`}>
+                      {tierInfo.text}
+                    </span>
+                  </td>
+                  <td className={`text-right p-2.5 text-sm font-bold tabular-nums ${
+                    combo.ev >= 1.0 ? 'text-emerald-700' : 'text-rose-600'
+                  }`}>
+                    {Math.round(combo.ev * 100)}%
+                  </td>
+                  <td className="text-right p-2.5 text-sm text-slate-500 tabular-nums">
+                    {combo.comboStability > 0 ? combo.comboStability.toFixed(1) : '-'}
+                  </td>
+                  <td className={`text-right p-2.5 text-sm tabular-nums ${
+                    combo.probability >= 0.005 ? 'text-slate-800 font-medium' :
+                    combo.probability >= 0.001 ? 'text-slate-600' :
+                    'text-slate-400'
+                  }`}>
+                    {(combo.probability * 100).toFixed(2)}%
+                  </td>
+                  <td className="text-right p-2.5 text-sm tabular-nums text-slate-600">
+                    {combo.approximateOdds.toFixed(1)}
+                  </td>
+                </tr>
+              )
+            })}
         </tbody>
       </table>
-
-      {!showAllResults && sortedCombinations.length > RESULTS_PER_PAGE.desktop && (
-        <div className="flex justify-center mt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onSetShowAll(true)}
-            className="text-blue-600 hover:text-blue-700"
-          >
-            残り{sortedCombinations.length - RESULTS_PER_PAGE.desktop}件を表示
-          </Button>
-        </div>
-      )}
-
-      {showAllResults && sortedCombinations.length > RESULTS_PER_PAGE.desktop && (
-        <div className="flex justify-center mt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              onSetShowAll(false)
-              resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-            }}
-            className="text-blue-600 hover:text-blue-700"
-          >
-            表示を折りたたむ
-          </Button>
-        </div>
-      )}
     </div>
   )
 }
