@@ -1,4 +1,5 @@
 import { combinations } from './combinations'
+import { harvilleTrifecta } from './harville'
 import type { CalculationResult, CombinationResult } from './types'
 
 export const calculateResultsForStakes = (
@@ -32,10 +33,13 @@ export const calculateResultsForStakes = (
     )
 
     let totalStakesAllCombos = 0
-    let sumD = 0
     let sumWeightedReturn = 0
 
     const combinationResults: CombinationResult[] = []
+
+    // Phase 1: 各組み合わせの2種類の確率を計算
+    const naiveProbs: number[] = []
+    const harvilleProbs: number[] = []
 
     for (let c = 0; c < combosStakes.length; c++) {
       const comboStakes = combosStakes[c]
@@ -45,36 +49,52 @@ export const calculateResultsForStakes = (
       const horses = indexCombos[c].map(idx => includedIndices[idx])
 
       const comboStakeSum = comboStakes.reduce((sum, val) => sum + val, 0)
-      const P_ijk_raw = comboP.reduce((prod, p) => prod * p, 1)
 
-      const combo = {
+      // 市場モデル: 単純積（市場がこの近似でオッズを形成していると仮定）
+      const P_naive_raw = comboP.reduce((prod, p) => prod * p, 1)
+
+      // 精密モデル: Harville（条件付き確率による精密推定）
+      const P_harville_raw = harvilleTrifecta(comboP[0], comboP[1], comboP[2])
+
+      naiveProbs.push(P_naive_raw)
+      harvilleProbs.push(P_harville_raw)
+
+      combinationResults.push({
         horses: horses.map(i => i + 1),
         stake: comboStakeSum,
         expectedReturn: 0,
         approximateOdds: 0,
-        probability: P_ijk_raw
-      }
-
-      combinationResults.push(combo)
+        probability: 0,
+      })
     }
 
-    const totalProb = combinationResults.reduce((sum, c) => sum + c.probability, 0)
+    // Phase 2: 両モデルの確率を正規化し、オッズ・期待リターンを計算
+    const totalNaive = naiveProbs.reduce((sum, p) => sum + p, 0)
+    const totalHarville = harvilleProbs.reduce((sum, p) => sum + p, 0)
 
-    for (const combo of combinationResults) {
-      const P_ijk = combo.probability / totalProb
-      const trifectaOdds = 0.75 / P_ijk
-      const comboReturn = combo.stake * trifectaOdds
+    for (let c = 0; c < combinationResults.length; c++) {
+      const combo = combinationResults[c]
 
-      combo.probability = P_ijk
-      combo.approximateOdds = trifectaOdds
+      const P_naive = naiveProbs[c] / totalNaive
+      const P_harville = harvilleProbs[c] / totalHarville
+
+      // 市場オッズ: 単純積モデルに基づく理論オッズ
+      const marketOdds = 0.75 / P_naive
+
+      // 期待リターン: 的中時の払戻金額
+      const comboReturn = combo.stake * marketOdds
+
+      combo.probability = P_harville
+      combo.approximateOdds = marketOdds
       combo.expectedReturn = comboReturn
 
       totalStakesAllCombos += combo.stake
-      sumD += P_ijk
-      sumWeightedReturn += comboReturn * P_ijk
+
+      // Harville確率で加重: EV = Σ(リターン × P_harville)
+      sumWeightedReturn += comboReturn * P_harville
     }
 
-    const weightedReturn = sumD > 0 ? sumWeightedReturn / sumD : 0
+    const weightedReturn = sumWeightedReturn
 
     const minReturn = Math.min(...combinationResults.map(c => c.expectedReturn))
     const maxReturn = Math.max(...combinationResults.map(c => c.expectedReturn))

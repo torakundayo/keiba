@@ -50,7 +50,7 @@ export function ResultsTable({
                             <Info className="h-4 w-4 text-blue-500" />
                           </TooltipTrigger>
                           <TooltipContent className="text-left max-w-[300px] p-3 text-sm font-normal">
-                            確率は、モデルの仮定（独立性や単純な積の確率）に強く依存するため、出走頭数が少ないほど歪みが大きくなる傾向があります。
+                            Harvilleモデルによる確率推定です。単純積モデルとの差が大きい組み合わせほど、期待値が0.75から乖離します。
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
