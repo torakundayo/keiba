@@ -35,8 +35,7 @@ export function ResultsTable({
             {[
               { key: 'horses', label: '組合せ' },
               { key: 'tier', label: '推奨度' },
-              { key: 'ev', label: '割安度' },
-              { key: 'comboStability', label: '安定度積' },
+              { key: 'ev', label: '期待回収率' },
               { key: 'probability', label: '確率' },
               { key: 'approximateOdds', label: '予想オッズ' },
             ].map(({ key, label }) => (
@@ -85,9 +84,6 @@ export function ResultsTable({
                     combo.ev >= 1.0 ? 'text-emerald-700' : 'text-rose-600'
                   }`}>
                     {Math.round(combo.ev * 100)}%
-                  </td>
-                  <td className="text-right p-2.5 text-sm text-slate-500 tabular-nums">
-                    {combo.comboStability > 0 ? combo.comboStability.toFixed(1) : '-'}
                   </td>
                   <td className={`text-right p-2.5 text-sm tabular-nums ${
                     combo.probability >= 0.005 ? 'text-slate-800 font-medium' :

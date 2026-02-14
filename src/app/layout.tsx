@@ -22,8 +22,8 @@ const notoSerif = Noto_Serif_JP({
 });
 
 export const metadata: Metadata = {
-  title: "3連複期待リターン計算ツール",
-  description: "競馬の3連複購入における期待リターンを計算するためのツール",
+  title: "3連複 買い目分析",
+  description: "競馬の3連複の買い目を分析し、推奨される組み合わせを提示するツール",
 };
 
 interface RootLayoutProps {

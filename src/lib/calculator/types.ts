@@ -50,6 +50,9 @@ export type Race = {
   name: string
   url: string
   date: string
+  venue?: string
+  raceNumber?: number
+  time?: string
 }
 
 export type PlaceOdds = {
@@ -63,8 +66,15 @@ export type HorseOdds = {
   placeOdds: PlaceOdds
 }
 
+export type RaceDate = {
+  id: string
+  label: string
+  selected: boolean
+}
+
 export type RaceResponse = {
   races: Race[]
+  dates?: RaceDate[]
 }
 
 export const RESULTS_PER_PAGE = {

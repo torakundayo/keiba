@@ -1,18 +1,22 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import axios from 'axios'
 import type { RaceResponse } from '@/lib/calculator/types'
 
-export function useRaceData() {
+export function useRaceData(selectedDate?: string) {
   return useQuery<RaceResponse>({
-    queryKey: ['recentGradeRace'],
+    queryKey: ['races', selectedDate ?? 'default'],
     queryFn: async () => {
       try {
-        const response = await axios.get('/api/recent-grade-race')
+        const url = selectedDate
+          ? `/api/recent-grade-race?date=${selectedDate}`
+          : '/api/recent-grade-race'
+        const response = await axios.get(url)
         return response.data
       } catch (error) {
         console.error('Failed to fetch race data:', error)
         throw error
       }
-    }
+    },
+    placeholderData: keepPreviousData,
   })
 }

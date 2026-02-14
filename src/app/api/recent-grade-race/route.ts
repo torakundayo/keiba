@@ -1,11 +1,16 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import * as cheerio from 'cheerio'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const response = await fetch('https://www.keibalab.jp/db/race/grade.html')
+    const dateParam = request.nextUrl.searchParams.get('date')
+    const fetchUrl = dateParam
+      ? `https://www.keibalab.jp/db/race/${dateParam}/`
+      : 'https://www.keibalab.jp/db/race/'
+
+    const response = await fetch(fetchUrl)
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
@@ -14,66 +19,88 @@ export async function GET() {
     const html = await response.text()
     const $ = cheerio.load(html)
 
-    // 今日の日付を取得（日本時間）
-    const now = new Date()
-    const japanTime = new Intl.DateTimeFormat('ja-JP', {
-      timeZone: 'Asia/Tokyo',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).format(now)
-    const [currentYear, currentMonth, currentDay] = japanTime.split('/').map(Number)
+    // ページタイトルから日付を取得（例: "2026年2月15日のレース一覧"）
+    const pageTitle = $('title').text()
+    const titleDateMatch = pageTitle.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/)
+    let pageDate = ''
+    if (titleDateMatch) {
+      const [, year, month, day] = titleDateMatch
+      pageDate = `${year}/${month.padStart(2, '0')}/${day.padStart(2, '0')}`
+    }
+
+    // 開催日程のリンクを取得
+    interface RaceDate {
+      id: string    // YYYYMMDD
+      label: string // "2月15日"
+      selected: boolean
+    }
+
+    const dates: RaceDate[] = []
+    $('ul.option-set.filters li a[href^="/db/race/"]').each((_, el) => {
+      const href = $(el).attr('href') || ''
+      const dateIdMatch = href.match(/\/db\/race\/(\d{8})\//)
+      if (!dateIdMatch) return
+      const label = $(el).text().trim()
+      const selected = $(el).hasClass('selected')
+      dates.push({ id: dateIdMatch[1], label, selected })
+    })
 
     interface Race {
       name: string
       url: string
       date: string
+      venue: string
+      raceNumber: number
+      time: string
     }
 
-    let upcomingRaces: Race[] = []
+    const races: Race[] = []
 
-    $('div.raceTableWrap table.DbTable tr.dispRow').each((index, tr) => {
-      if (upcomingRaces.length >= 3) return false
+    // 各会場テーブルを処理
+    $('table.table.table-bordered.table-striped').each((_, table) => {
+      const headerText = $(table).find('thead th').first().text().trim()
+      const venueMatch = headerText.match(/\d+回(.+?)\d+日目/)
+      const venue = venueMatch ? venueMatch[1] : headerText.split('\n')[0].trim()
 
-      const dateText = $(tr).find('td:first-child').text().trim()
-      const dateMatch = dateText.match(/(\d{1,2})月(\d{1,2})日/)
-      if (!dateMatch) return
+      $(table).find('tbody tr').each((_, tr) => {
+        const raceNumTd = $(tr).find('td.raceNum')
+        const raceLink = raceNumTd.find('a').first()
+        const raceNumText = raceLink.text().trim()
+        const raceNumMatch = raceNumText.match(/(\d+)R/)
+        if (!raceNumMatch) return
 
-      const month = parseInt(dateMatch[1], 10)
-      const day = parseInt(dateMatch[2], 10)
+        const raceNumber = parseInt(raceNumMatch[1], 10)
+        const time = raceNumTd.find('span').text().trim()
 
-      const raceDate = month * 100 + day
-      const today = currentMonth * 100 + currentDay
+        const infoTd = $(tr).find('td').eq(1)
+        const nameLink = infoTd.find('a').first()
+        const raceName = nameLink.text().trim()
+        const baseUrl = nameLink.attr('href')
 
-      if (raceDate >= today) {
-        const boldTd = $(tr).find('td.bold')
-        const link = boldTd.find('a')
-        const raceName = link.length > 0 ? link.text().trim() : ''
-        const baseUrl = link.attr('href')
+        if (!raceName || !baseUrl) return
 
-        if (raceName && baseUrl) {
-          // baseUrl is like /db/race/202602150511/ — already ends with /
-          const raceUrl = `https://www.keibalab.jp${baseUrl}odds.html`
-          const formattedDate = `${currentYear}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`
+        const raceUrl = `https://www.keibalab.jp${baseUrl}odds.html`
 
-          upcomingRaces.push({
-            name: raceName,
-            url: raceUrl,
-            date: formattedDate
-          })
-        }
-      }
+        races.push({
+          name: raceName,
+          url: raceUrl,
+          date: pageDate,
+          venue,
+          raceNumber,
+          time,
+        })
+      })
     })
 
-    if (upcomingRaces.length === 0) {
+    if (races.length === 0 && dates.length === 0) {
       return NextResponse.json(
-        { error: 'No upcoming races found' },
+        { error: 'No races found' },
         { status: 404 }
       )
     }
 
     return NextResponse.json(
-      { races: upcomingRaces },
+      { races, dates },
       {
         status: 200,
         headers: {

@@ -49,7 +49,7 @@ export function ResultsCardView({
                 combo.ev >= 1.0 ? 'text-emerald-700' : 'text-rose-600'
               }`}>
                 {Math.round(combo.ev * 100)}%
-                <span className="text-xs font-normal text-slate-400 ml-1">割安度</span>
+                <span className="text-xs font-normal text-slate-400 ml-1">期待回収率</span>
               </p>
               <div className="text-xs text-slate-500 space-y-0.5 mt-1.5 tabular-nums">
                 <p>確率: <span className={
