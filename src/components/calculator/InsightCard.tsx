@@ -1,6 +1,7 @@
 "use client"
 
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 
 const BlockMath = dynamic(() => import('react-katex').then(mod => mod.BlockMath), {
   ssr: false,
@@ -135,6 +136,143 @@ export function InsightCard() {
         </div>
       </section>
 
+      {/* 想定される反論 */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-slate-800">「それでも勝てる方法があるのでは？」</h2>
+        <p className="text-slate-600">
+          75%の壁を超える方法について、よく挙げられる反論とその回答をまとめます。
+        </p>
+
+        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
+          <h3 className="text-base font-medium text-slate-700">「AI・機械学習を使えば勝てるのでは？」</h3>
+          <p className="text-slate-600">
+            機械学習モデルが使う特徴量（過去成績、血統、調教タイムなど）は、
+            すべて<strong className="text-slate-800">他の市場参加者もアクセスできる公開情報</strong>です。
+            これらの情報はすでにオッズに織り込まれています。
+          </p>
+          <p className="text-slate-600">
+            仮にAIが市場より正確な確率を推定できたとしても、
+            同じ手法を使う参加者が増えればオッズが修正され、優位性は消滅します。
+            これは株式市場のアルゴリズム取引と同じメカニズムです。
+          </p>
+        </div>
+
+        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
+          <h3 className="text-base font-medium text-slate-700">「オッズの変動タイミングを利用すれば？」</h3>
+          <p className="text-slate-600">
+            締め切り直前のオッズ変動を利用する戦略は理論的に存在しますが、
+            JRAの投票締め切りは発走直前であり、大量の資金が最後に流入します。
+            最終オッズは締め切り前のオッズと大きく異なることが多く、
+            「変動を先読み」すること自体が困難です。
+          </p>
+          <p className="text-slate-600">
+            また、仮にタイミング戦略が有効だとしても、
+            それは「オッズに織り込まれていない情報」ではなく
+            「まだ織り込まれていないだけの情報」であり、
+            最終オッズでは反映されます。
+          </p>
+        </div>
+
+        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
+          <h3 className="text-base font-medium text-slate-700">「プロの予想家は勝っているのでは？」</h3>
+          <p className="text-slate-600">
+            長期間の回収率データを公開している予想家は少なく、
+            公開している場合も<strong className="text-slate-800">生存者バイアス</strong>が存在します。
+            100人が予想を始めれば、統計的に数人は短期的に高い回収率を出しますが、
+            それは実力ではなく確率的な偏りです。
+          </p>
+          <p className="text-slate-600">
+            長期（1,000レース以上）で控除率25%を上回り続ける予想家の存在は、
+            学術的には確認されていません。
+          </p>
+        </div>
+
+        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
+          <h3 className="text-base font-medium text-slate-700">「非公開情報（インサイダー）があれば？」</h3>
+          <p className="text-slate-600">
+            馬の体調不良、調教の手応え、厩舎の勝負気配など、
+            公開されていない情報を持つ関係者は理論的に優位性を持ちえます。
+            しかし、これは<strong className="text-slate-800">合法性の問題</strong>であり、
+            競馬法で規制されている領域です。
+          </p>
+          <p className="text-slate-600">
+            また、関係者の購入行動はオッズに反映されるため、
+            「不自然な人気の変動」として市場に情報が漏洩します。
+            結果として、非公開情報の優位性も限定的です。
+          </p>
+        </div>
+      </section>
+
+      {/* 他のギャンブルとの比較 */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-slate-800">他のギャンブルとの比較</h2>
+        <p className="text-slate-600">
+          競馬の3連複（控除率25%）は、ギャンブル全体の中でどのような位置づけなのかを比較します。
+        </p>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-slate-600">
+            <thead>
+              <tr className="border-b border-slate-200 text-xs text-slate-400">
+                <th className="text-left py-2 pr-4">ギャンブル</th>
+                <th className="text-right py-2 px-4">控除率</th>
+                <th className="text-right py-2 px-4">払戻率</th>
+                <th className="text-left py-2 pl-4">特徴</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-slate-50">
+                <td className="py-2 pr-4 font-medium text-slate-700">宝くじ</td>
+                <td className="text-right py-2 px-4 tabular-nums">約55%</td>
+                <td className="text-right py-2 px-4 tabular-nums text-rose-600 font-medium">約45%</td>
+                <td className="py-2 pl-4 text-xs">最も不利。1枚300円の期待値は約135円</td>
+              </tr>
+              <tr className="border-b border-slate-50">
+                <td className="py-2 pr-4 font-medium text-slate-700">競馬（3連複）</td>
+                <td className="text-right py-2 px-4 tabular-nums">25%</td>
+                <td className="text-right py-2 px-4 tabular-nums text-amber-600 font-medium">75%</td>
+                <td className="py-2 pl-4 text-xs">100円あたりの期待値は75円</td>
+              </tr>
+              <tr className="border-b border-slate-50">
+                <td className="py-2 pr-4 font-medium text-slate-700">パチンコ</td>
+                <td className="text-right py-2 px-4 tabular-nums">10〜15%</td>
+                <td className="text-right py-2 px-4 tabular-nums text-slate-600 font-medium">85〜90%</td>
+                <td className="py-2 pl-4 text-xs">店舗設定により変動。長時間拘束</td>
+              </tr>
+              <tr className="border-b border-slate-50">
+                <td className="py-2 pr-4 font-medium text-slate-700">カジノ（ルーレット）</td>
+                <td className="text-right py-2 px-4 tabular-nums">2.7〜5.3%</td>
+                <td className="text-right py-2 px-4 tabular-nums text-slate-600 font-medium">94.7〜97.3%</td>
+                <td className="py-2 pl-4 text-xs">シングルゼロ/ダブルゼロで異なる</td>
+              </tr>
+              <tr>
+                <td className="py-2 pr-4 font-medium text-slate-700">カジノ（ブラックジャック）</td>
+                <td className="text-right py-2 px-4 tabular-nums">0.5〜2%</td>
+                <td className="text-right py-2 px-4 tabular-nums text-emerald-600 font-medium">98〜99.5%</td>
+                <td className="py-2 pl-4 text-xs">基本戦略使用時。最も有利なギャンブル</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
+          <p className="text-slate-600">
+            競馬の控除率25%は宝くじ（55%）よりは有利ですが、
+            カジノ（0.5〜5%）と比較するとかなり不利です。
+            100回賭けた場合の期待損失で比較すると:
+          </p>
+          <ul className="list-disc list-inside space-y-1 text-slate-600">
+            <li>宝くじ: 100回 × 300円 × 55% = <strong className="text-slate-800">16,500円の損失</strong></li>
+            <li>競馬3連複: 100回 × 100円 × 25% = <strong className="text-slate-800">2,500円の損失</strong></li>
+            <li>ブラックジャック: 100回 × 1,000円 × 1% = <strong className="text-slate-800">1,000円の損失</strong></li>
+          </ul>
+          <p className="text-slate-600">
+            どのギャンブルも長期的には必ず損失が発生します。
+            違いは<strong className="text-slate-800">損失の速度</strong>だけです。
+          </p>
+        </div>
+      </section>
+
       {/* よくある非効率な買い方 */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">よくある非効率な買い方</h2>
@@ -230,6 +368,69 @@ export function InsightCard() {
         </div>
       </section>
 
+      {/* ギャンブルの認知バイアス */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-slate-800">ギャンブルの認知バイアス</h2>
+        <p className="text-slate-600">
+          人間の脳はギャンブルにおいて合理的な判断を下すことが苦手です。
+          以下の認知バイアスを知っておくことで、非合理な行動を避ける助けになります。
+        </p>
+
+        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
+          <h3 className="text-base font-medium text-slate-700">損失回避バイアス</h3>
+          <p className="text-slate-600">
+            人は同じ金額の「利益」と「損失」を同等に感じません。
+            1,000円を失う苦痛は、1,000円を得る喜びの<strong className="text-slate-800">約2倍</strong>の強さがあります（プロスペクト理論）。
+            このため、損失を取り戻そうとして賭け金を増やす行動（いわゆる「追い上げ」）に陥りやすくなります。
+          </p>
+          <p className="text-slate-600">
+            追い上げは「負けるほど賭け金が増える」構造であり、
+            控除率25%の環境では損失を加速させるだけです。
+          </p>
+        </div>
+
+        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
+          <h3 className="text-base font-medium text-slate-700">ニアミス効果</h3>
+          <p className="text-slate-600">
+            「あと1頭で的中だった」という体験は、実際には完全に外れた場合と結果（損失額）は同じですが、
+            脳は<strong className="text-slate-800">「惜しかった＝次は当たりそう」</strong>と誤解釈します。
+            3連複では「2頭は当たっていた」というニアミスが頻繁に発生し、
+            これが購入を継続する動機づけになります。
+          </p>
+        </div>
+
+        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
+          <h3 className="text-base font-medium text-slate-700">サンクコストの誤謬</h3>
+          <p className="text-slate-600">
+            「ここまで使ったお金を回収したい」という心理は、
+            過去の投資（すでに失ったお金）に基づいて将来の判断を歪めます。
+            過去の損失は<strong className="text-slate-800">取り戻せないコスト（埋没費用）</strong>であり、
+            次のレースの期待値とは無関係です。
+            次のレースの期待回収率は、常に75%前後です。
+          </p>
+        </div>
+
+        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
+          <h3 className="text-base font-medium text-slate-700">ギャンブラーの誤謬</h3>
+          <p className="text-slate-600">
+            「5レース連続で外れたから、次は当たるはず」という考えは誤りです。
+            各レースは<strong className="text-slate-800">独立事象</strong>であり、
+            過去の結果が次のレースの的中確率に影響を与えることはありません。
+            コイントスで5回連続表が出ても、次に表が出る確率は50%のままです。
+          </p>
+        </div>
+
+        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
+          <h3 className="text-base font-medium text-slate-700">確証バイアス</h3>
+          <p className="text-slate-600">
+            的中した体験は鮮明に記憶され、外れた体験は忘れやすい傾向があります。
+            「あの予想法でよく当たる」と感じていても、
+            <strong className="text-slate-800">実際に全レースの収支を記録する</strong>と、
+            多くの場合、期待回収率の75%前後に収束します。
+          </p>
+        </div>
+      </section>
+
       {/* このツールの使い方 */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">このツールの最適な使い方</h2>
@@ -253,8 +454,41 @@ export function InsightCard() {
             このモデルにない情報（馬場読み、パドック観察、レース展開予想など）を
             加味することで、モデル以上の判断が可能になる場合があります。
           </li>
+          <li>
+            <strong className="text-slate-800">損失の上限を決める</strong>:
+            1日の投資額、1ヶ月の投資額に上限を設け、
+            それを超えたら購入をやめるルールを事前に決めておくことが重要です。
+          </li>
         </ul>
       </section>
+
+      {/* Page Navigation */}
+      <nav className="border-t border-slate-200 pt-6">
+        <p className="text-xs text-slate-400 mb-3">関連ページ</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Link
+            href="/explanation"
+            className="p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors group"
+          >
+            <p className="text-sm font-medium text-slate-700 group-hover:text-slate-900">計算方法</p>
+            <p className="text-xs text-slate-400 mt-0.5">確率モデルの数学的根拠</p>
+          </Link>
+          <Link
+            href="/backtest"
+            className="p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors group"
+          >
+            <p className="text-sm font-medium text-slate-700 group-hover:text-slate-900">検証</p>
+            <p className="text-xs text-slate-400 mt-0.5">774レースの実証データ</p>
+          </Link>
+          <Link
+            href="/analysis"
+            className="p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors group"
+          >
+            <p className="text-sm font-medium text-slate-700 group-hover:text-slate-900">買い目分析</p>
+            <p className="text-xs text-slate-400 mt-0.5">実際のレースで試す</p>
+          </Link>
+        </div>
+      </nav>
     </article>
   )
 }

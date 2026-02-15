@@ -1,5 +1,6 @@
 "use client"
 
+import Link from 'next/link'
 import dynamic from 'next/dynamic'
 
 const BlockMath = dynamic(() => import('react-katex').then(mod => mod.BlockMath), {
@@ -23,7 +24,74 @@ export function MathExplanation() {
     <article className="space-y-10">
       <header>
         <h1 className="text-2xl md:text-3xl font-bold text-slate-800">計算方法の解説</h1>
+        <p className="text-sm text-slate-400 mt-1">
+          このツールがどのように確率を推定しているかの数理的な説明
+        </p>
       </header>
+
+      {/* 前提知識: パリミュチュエル方式 */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-slate-800">前提: JRAのオッズの仕組み</h2>
+
+        <div className="space-y-3 text-sm text-slate-600">
+          <p>
+            JRAの馬券は<strong className="text-slate-800">パリミュチュエル方式</strong>（投票プール方式）を採用しています。
+            ブックメーカーのように事前にオッズが固定されるのではなく、全ての購入者の投票総額からオッズが決まります。
+          </p>
+          <div className="pl-4 border-l-2 border-slate-200 space-y-2">
+            <p>
+              <strong className="text-slate-700">仕組み:</strong> 全購入者の投票総額から、まずJRAが<strong className="text-slate-800">控除率</strong>（テラ銭）を差し引きます。
+              残りを的中者で山分けするため、オッズは「その馬券にどれだけの人が賭けたか」で決まります。
+            </p>
+            <p>
+              <strong className="text-slate-700">控除率:</strong> 馬券種によって異なります。
+            </p>
+            <div className="overflow-x-auto">
+              <table className="text-xs text-slate-600 w-full">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-400">
+                    <th className="text-left py-1 pr-4">馬券種</th>
+                    <th className="text-right py-1 px-4">控除率</th>
+                    <th className="text-right py-1 pl-4">払戻率</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-slate-50">
+                    <td className="py-1 pr-4">単勝・複勝</td>
+                    <td className="text-right py-1 px-4 tabular-nums">20%</td>
+                    <td className="text-right py-1 pl-4 tabular-nums">80%</td>
+                  </tr>
+                  <tr className="border-b border-slate-50">
+                    <td className="py-1 pr-4">馬連・ワイド</td>
+                    <td className="text-right py-1 px-4 tabular-nums">22.5%</td>
+                    <td className="text-right py-1 pl-4 tabular-nums">77.5%</td>
+                  </tr>
+                  <tr className="border-b border-slate-50">
+                    <td className="py-1 pr-4 font-medium">3連複</td>
+                    <td className="text-right py-1 px-4 tabular-nums font-medium">25%</td>
+                    <td className="text-right py-1 pl-4 tabular-nums font-medium">75%</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1 pr-4">3連単</td>
+                    <td className="text-right py-1 px-4 tabular-nums">27.5%</td>
+                    <td className="text-right py-1 pl-4 tabular-nums">72.5%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p>
+              つまり3連複の場合、全ての組み合わせを均等に買うと<strong className="text-slate-800">必ず75%しか返ってこない</strong>設計です。
+              これがこのツールの「75%の壁」の正体です。
+            </p>
+          </div>
+          <p>
+            <strong className="text-slate-700">オッズの意味:</strong> オッズは「市場参加者の集合知」です。
+            過去成績・血統・調教タイム・天候・馬場状態・騎手の力量など、あらゆる公開情報を
+            市場参加者が自分の資金を使って評価した結果がオッズに反映されています。
+            これが後述する「市場効率仮説」の根拠です。
+          </p>
+        </div>
+      </section>
 
       {/* 概要 */}
       <section className="space-y-4">
@@ -54,9 +122,84 @@ export function MathExplanation() {
             </p>
           </div>
         </div>
+
+        {/* なぜ2つのデータソースが必要か */}
+        <div className="pl-4 border-l-2 border-slate-200 space-y-2 text-sm text-slate-600">
+          <p className="font-medium text-slate-700">なぜ2つのオッズを使うのか？</p>
+          <p>
+            もし単勝オッズだけで「確率」も「オッズ」も推定すると、回収率は数学的に必ず75%に固定されます。
+            確率とオッズが同じデータから出ているので、計算中に打ち消し合ってしまうのです
+            （詳細は<Link href="/insight" className="text-slate-800 underline underline-offset-2">考察ページ</Link>を参照）。
+          </p>
+          <p>
+            これを避けるために、<strong className="text-slate-800">オッズの推定には単勝</strong>、
+            <strong className="text-slate-800">確率の推定には複勝</strong>という別々のデータソースを使います。
+            単勝は「1着確率」、複勝は「3着以内確率」を反映しており、
+            この2つの市場の評価のズレが組み合わせごとの回収率の差を生み出します。
+          </p>
+        </div>
       </section>
 
-      {/* 計算方法 */}
+      {/* 具体例 */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-slate-800">具体例で理解する</h2>
+        <p className="text-sm text-slate-500">
+          14頭立てのレースで、馬A・B・Cの3頭に注目した場合の計算例です。
+        </p>
+
+        <div className="overflow-x-auto">
+          <table className="text-sm text-slate-600 w-full">
+            <thead>
+              <tr className="border-b border-slate-200 text-xs text-slate-400">
+                <th className="text-left py-1.5 pr-3">馬</th>
+                <th className="text-right py-1.5 px-3">単勝オッズ</th>
+                <th className="text-right py-1.5 px-3">推定勝率</th>
+                <th className="text-right py-1.5 px-3">複勝オッズ</th>
+                <th className="text-right py-1.5 pl-3">推定3着内率</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-slate-50">
+                <td className="py-1.5 pr-3 font-medium">馬A（1番人気）</td>
+                <td className="text-right py-1.5 px-3 tabular-nums">3.5倍</td>
+                <td className="text-right py-1.5 px-3 tabular-nums">22.9%</td>
+                <td className="text-right py-1.5 px-3 tabular-nums">1.3〜1.8倍</td>
+                <td className="text-right py-1.5 pl-3 tabular-nums">51.6%</td>
+              </tr>
+              <tr className="border-b border-slate-50">
+                <td className="py-1.5 pr-3 font-medium">馬B（3番人気）</td>
+                <td className="text-right py-1.5 px-3 tabular-nums">8.0倍</td>
+                <td className="text-right py-1.5 px-3 tabular-nums">10.0%</td>
+                <td className="text-right py-1.5 px-3 tabular-nums">2.0〜3.5倍</td>
+                <td className="text-right py-1.5 pl-3 tabular-nums">29.1%</td>
+              </tr>
+              <tr>
+                <td className="py-1.5 pr-3 font-medium">馬C（8番人気）</td>
+                <td className="text-right py-1.5 px-3 tabular-nums">25.0倍</td>
+                <td className="text-right py-1.5 px-3 tabular-nums">3.2%</td>
+                <td className="text-right py-1.5 px-3 tabular-nums">4.0〜8.0倍</td>
+                <td className="text-right py-1.5 pl-3 tabular-nums">13.3%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="pl-4 border-l-2 border-slate-200 space-y-2 text-sm text-slate-600">
+          <p>
+            <strong className="text-slate-700">推定勝率の計算:</strong> 馬Aの場合、0.8 / 3.5 = 22.9%（0.8は単勝の払戻率80%）
+          </p>
+          <p>
+            <strong className="text-slate-700">推定3着内率の計算:</strong> 馬Aの場合、0.8 / ((1.3 + 1.8) / 2) = 0.8 / 1.55 = 51.6%
+          </p>
+          <p>
+            <strong className="text-slate-700">注目ポイント:</strong> 馬Cは単勝オッズ25倍（勝率3.2%）ですが、
+            複勝オッズでは3着以内確率13.3%と評価されています。
+            この「単勝での評価と複勝での評価のズレ」が組み合わせの回収率に影響します。
+          </p>
+        </div>
+      </section>
+
+      {/* 計算方法の詳細 */}
       <section className="space-y-6">
         <h2 className="text-lg font-semibold text-slate-800">計算方法の詳細</h2>
 
@@ -166,27 +309,6 @@ export function MathExplanation() {
         </div>
       </section>
 
-      {/* 市場効率と限界 */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-800">市場効率とモデルの限界</h2>
-
-        <div className="space-y-3 text-sm text-slate-600">
-          <p>
-            このモデルはオッズから確率を推定しています。オッズは市場参加者の集合知であり、
-            過去成績・血統・調教データ・馬場状態など全ての公開情報がすでに織り込まれています。
-          </p>
-          <p>
-            そのため、このモデルで<strong className="text-slate-800">JRA控除率25%を上回る回収率を達成することは原理的に困難</strong>です。
-            全組み合わせの加重平均回収率は理論上75%に収束します。
-          </p>
-          <p>
-            このツールの価値は利益を出すことではなく、<strong className="text-slate-800">確率構造を可視化</strong>し、
-            「どの組み合わせが相対的に有利か」「何点買いが最も損失が少ないか」を
-            データに基づいて判断できるようにすることにあります。
-          </p>
-        </div>
-      </section>
-
       {/* Harvilleフォールバック */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">補足: 複勝オッズがない場合（Harvilleモデル）</h2>
@@ -216,6 +338,17 @@ export function MathExplanation() {
             />
           </div>
         </div>
+      </section>
+
+      {/* 次のページへの導線 */}
+      <section className="border-t border-slate-200 pt-6">
+        <p className="text-sm text-slate-500">
+          この計算方法で774レースを検証した結果は
+          <Link href="/backtest" className="text-slate-800 underline underline-offset-2 mx-1">検証ページ</Link>
+          で確認できます。なぜこのモデルで利益が出ないのかの理論的背景は
+          <Link href="/insight" className="text-slate-800 underline underline-offset-2 mx-1">考察ページ</Link>
+          で解説しています。
+        </p>
       </section>
     </article>
   )
