@@ -135,6 +135,101 @@ export function InsightCard() {
         </div>
       </section>
 
+      {/* よくある非効率な買い方 */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-slate-800">よくある非効率な買い方</h2>
+        <p className="text-slate-600">
+          多くの競馬ファンが無意識にやっている買い方の中に、数学的に損失を拡大するパターンがあります。
+          バックテストの結果から、以下の行動が非効率であることが示されています。
+        </p>
+
+        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
+          <h3 className="text-base font-medium text-slate-700">「絞れないからボックスで広げる」</h3>
+          <p className="text-slate-600">
+            5頭ボックス（10通り）や6頭ボックス（20通り）は、的中率が上がる代わりに
+            <strong className="text-slate-800">回収率を確実に下げます</strong>。
+            バックテストでは、購入点数を増やすほど回収率は単調に低下しました。
+          </p>
+          <div className="overflow-x-auto">
+            <table className="text-sm text-slate-600 w-full">
+              <thead>
+                <tr className="border-b border-slate-200 text-xs text-slate-400">
+                  <th className="text-left py-1.5 pr-4">買い方</th>
+                  <th className="text-right py-1.5 px-4">点数</th>
+                  <th className="text-right py-1.5 px-4">的中率</th>
+                  <th className="text-right py-1.5 pl-4">回収率</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-slate-50">
+                  <td className="py-1.5 pr-4">Top 3（最少の絞り込み）</td>
+                  <td className="text-right py-1.5 px-4 tabular-nums">3</td>
+                  <td className="text-right py-1.5 px-4 tabular-nums">21.3%</td>
+                  <td className="text-right py-1.5 pl-4 tabular-nums font-medium">45%</td>
+                </tr>
+                <tr className="border-b border-slate-50">
+                  <td className="py-1.5 pr-4">5頭ボックス相当</td>
+                  <td className="text-right py-1.5 px-4 tabular-nums">10</td>
+                  <td className="text-right py-1.5 px-4 tabular-nums">39.1%</td>
+                  <td className="text-right py-1.5 pl-4 tabular-nums font-medium">33%</td>
+                </tr>
+                <tr>
+                  <td className="py-1.5 pr-4">6頭ボックス相当</td>
+                  <td className="text-right py-1.5 px-4 tabular-nums">20</td>
+                  <td className="text-right py-1.5 px-4 tabular-nums">56.1%</td>
+                  <td className="text-right py-1.5 pl-4 tabular-nums font-medium">31%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="text-slate-600">
+            的中率は3倍近くに上がっていますが、回収率は45%から31%に低下しています。
+            「絞れないから広げる」は<strong className="text-slate-800">損失を拡大する行為</strong>です。
+            しかも実際のボックスは確率順位を無視した全組み合わせなので、
+            確率上位のTop Nよりさらに回収率が悪くなります。
+          </p>
+        </div>
+
+        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
+          <h3 className="text-base font-medium text-slate-700">「的中率を上げれば勝てる」という誤解</h3>
+          <p className="text-slate-600">
+            的中率と回収率は別の指標です。
+            的中率を上げるために点数を増やすと、投資額が増える一方で、
+            追加した組み合わせは確率が低い（=当たりにくい）ものです。
+            結果として<strong className="text-slate-800">1レースあたりの損失額が増えます</strong>。
+          </p>
+          <ul className="list-disc list-inside space-y-1 text-slate-600">
+            <li>Top 3: 1レースあたり300円投資 → 平均165円の損失</li>
+            <li>Top 10: 1レースあたり1,000円投資 → 平均670円の損失</li>
+            <li>Top 20: 1レースあたり2,000円投資 → 平均1,380円の損失</li>
+          </ul>
+          <p className="text-slate-600">
+            たまに当たる喜びは増えますが、トータルの損失も増えていきます。
+          </p>
+        </div>
+
+        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
+          <h3 className="text-base font-medium text-slate-700">「人気馬同士のボックスなら堅い」</h3>
+          <p className="text-slate-600">
+            人気馬同士の組み合わせは的中確率が高い反面、<strong className="text-slate-800">オッズが低い</strong>ため、
+            当たっても配当が投資額に見合いません。
+            例えば5頭ボックス（10通り=1,000円）で的中しても、
+            人気馬同士の3連複は配当が1,000〜3,000円程度のことが多く、
+            外れた分の損失を取り戻せません。
+          </p>
+        </div>
+
+        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
+          <h3 className="text-base font-medium text-slate-700">「大穴を狙えば一発で取り戻せる」</h3>
+          <p className="text-slate-600">
+            高配当の組み合わせは的中確率が極めて低いため、
+            <strong className="text-slate-800">当たるまでの累積損失が配当を上回る</strong>のが通常です。
+            バックテストでは、的中した組み合わせの75%が確率順位47位以内でした。
+            確率的に下位の大穴は的中してもそれまでの損失に見合いません。
+          </p>
+        </div>
+      </section>
+
       {/* このツールの使い方 */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">このツールの最適な使い方</h2>
