@@ -45,4 +45,7 @@ next-env.d.ts
 out
 
 # Backtest cache (large, regeneratable)
-/data/backtest-cache.json
+/data/*.json
+
+scripts/*.js
+scripts/*.mjs
