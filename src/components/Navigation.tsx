@@ -7,8 +7,8 @@ import { Calculator, BookOpen, Lightbulb, FlaskConical } from 'lucide-react'
 const navItems = [
   { href: '/analysis', label: '買い目分析', icon: Calculator },
   { href: '/explanation', label: '計算方法', icon: BookOpen },
-  { href: '/insight', label: '考察', icon: Lightbulb },
   { href: '/backtest', label: '検証', icon: FlaskConical },
+  { href: '/insight', label: '考察', icon: Lightbulb },
 ]
 
 export function Navigation() {

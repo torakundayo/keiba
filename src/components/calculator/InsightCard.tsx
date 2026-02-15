@@ -31,17 +31,17 @@ export function InsightCard() {
       {/* バックテスト結果の要約 */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">バックテストの結果</h2>
-        <p className="text-slate-600">
+        <p className="text-sm text-slate-600">
           774レース（2025/11〜2026/02）のバックテストで、確率モデルの性能を検証しました。
         </p>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">確率ランキングは有効</h3>
-          <p className="text-slate-600">
+          <h3 className="text-sm font-medium text-slate-700">確率ランキングは有効</h3>
+          <p className="text-sm text-slate-600">
             的中した組み合わせの確率順位の中央値は16位（平均445通り中）。
             ランダムに選んだ場合の中央値は223位になるため、モデルは<strong className="text-slate-800">ランダムの約14倍の精度</strong>で的中組合せを上位にランク付けしています。
           </p>
-          <ul className="list-disc list-inside space-y-1 text-slate-600">
+          <ul className="list-disc list-inside space-y-1 text-sm text-slate-600">
             <li>Top 1: 的中率 8.4%（ランダムの38倍）</li>
             <li>Top 3: 的中率 21.3%（ランダムの32倍）</li>
             <li>Top 5: 的中率 28.6%（ランダムの26倍）</li>
@@ -50,8 +50,8 @@ export function InsightCard() {
         </div>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">利益は出ない</h3>
-          <p className="text-slate-600">
+          <h3 className="text-sm font-medium text-slate-700">利益は出ない</h3>
+          <p className="text-sm text-slate-600">
             しかし、最も回収率の高いTop 1戦略でも回収率は47%でした。
             確率順位は有効でも、<strong className="text-slate-800">利益を出すことはできません</strong>。
             これは市場効率仮説で説明できます。
@@ -64,8 +64,8 @@ export function InsightCard() {
         <h2 className="text-lg font-semibold text-slate-800">なぜ利益が出ないのか: 市場効率仮説</h2>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">オッズに全ての情報が織り込まれている</h3>
-          <p className="text-slate-600">
+          <h3 className="text-sm font-medium text-slate-700">オッズに全ての情報が織り込まれている</h3>
+          <p className="text-sm text-slate-600">
             競馬のオッズは、過去成績・血統・調教タイム・天候・馬場状態・騎手の力量など、
             あらゆる公開情報を市場参加者が織り込んだ結果です。
             このモデルはそのオッズから確率を推定しているため、
@@ -74,8 +74,8 @@ export function InsightCard() {
         </div>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">構造的な75%の壁</h3>
-          <p className="text-slate-600">
+          <h3 className="text-sm font-medium text-slate-700">構造的な75%の壁</h3>
+          <p className="text-sm text-slate-600">
             JRAの3連複控除率は25%（払戻率75%）。全組み合わせを均等に購入した場合、
             回収率は確実に75%になります。
             オッズから導出したモデルでは、どのような重み付けをしても、
@@ -93,7 +93,7 @@ export function InsightCard() {
       {/* なぜ単一モデルだと75%に固定されるか */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">なぜ単一モデルでは回収率が75%に固定されるのか</h2>
-        <p className="text-slate-600">
+        <p className="text-sm text-slate-600">
           もし確率とオッズを同じモデルから導出すると、回収率は必ず75%（3連複の払戻率）に固定されます。
           これは数学的なトートロジー（同語反復）です。
         </p>
@@ -105,7 +105,7 @@ export function InsightCard() {
               style={longMathStyle}
             />
           </div>
-          <p className="text-slate-600">
+          <p className="text-sm text-slate-600">
             分子と分母の <InlineMath math="P_{ijk}" /> が完全に相殺されるため、
             どのような重み配分をしても回収率は変わりません。
             このため、本ツールでは単勝オッズと複勝オッズの2つの異なるデータソースを使っています。
@@ -116,7 +116,7 @@ export function InsightCard() {
       {/* 2データソースアプローチ */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">単勝 × 複勝の2データソースアプローチ</h2>
-        <p className="text-slate-600">
+        <p className="text-sm text-slate-600">
           <strong className="text-slate-800">単勝オッズ</strong>（市場モデル）と<strong className="text-slate-800">複勝オッズ</strong>（確率モデル）という
           異なるデータソースを使うことで、75%の壁からのズレを生み出しています。
         </p>
@@ -128,7 +128,7 @@ export function InsightCard() {
               style={longMathStyle}
             />
           </div>
-          <p className="text-slate-600">
+          <p className="text-sm text-slate-600">
             単勝は「1着確率」を、複勝は「3着以内確率」を反映しています。
             この2つの市場の評価のズレにより、個別の組み合わせの回収率は75%から変動します。
             ただし、加重平均としては依然として75%前後に収束するため、全体で利益を出すことはできません。
@@ -139,18 +139,18 @@ export function InsightCard() {
       {/* 想定される反論 */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">「それでも勝てる方法があるのでは？」</h2>
-        <p className="text-slate-600">
+        <p className="text-sm text-slate-600">
           75%の壁を超える方法について、よく挙げられる反論とその回答をまとめます。
         </p>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">「AI・機械学習を使えば勝てるのでは？」</h3>
-          <p className="text-slate-600">
+          <h3 className="text-sm font-medium text-slate-700">「AI・機械学習を使えば勝てるのでは？」</h3>
+          <p className="text-sm text-slate-600">
             機械学習モデルが使う特徴量（過去成績、血統、調教タイムなど）は、
             すべて<strong className="text-slate-800">他の市場参加者もアクセスできる公開情報</strong>です。
             これらの情報はすでにオッズに織り込まれています。
           </p>
-          <p className="text-slate-600">
+          <p className="text-sm text-slate-600">
             仮にAIが市場より正確な確率を推定できたとしても、
             同じ手法を使う参加者が増えればオッズが修正され、優位性は消滅します。
             これは株式市場のアルゴリズム取引と同じメカニズムです。
@@ -158,14 +158,14 @@ export function InsightCard() {
         </div>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">「オッズの変動タイミングを利用すれば？」</h3>
-          <p className="text-slate-600">
+          <h3 className="text-sm font-medium text-slate-700">「オッズの変動タイミングを利用すれば？」</h3>
+          <p className="text-sm text-slate-600">
             締め切り直前のオッズ変動を利用する戦略は理論的に存在しますが、
             JRAの投票締め切りは発走直前であり、大量の資金が最後に流入します。
             最終オッズは締め切り前のオッズと大きく異なることが多く、
             「変動を先読み」すること自体が困難です。
           </p>
-          <p className="text-slate-600">
+          <p className="text-sm text-slate-600">
             また、仮にタイミング戦略が有効だとしても、
             それは「オッズに織り込まれていない情報」ではなく
             「まだ織り込まれていないだけの情報」であり、
@@ -174,28 +174,28 @@ export function InsightCard() {
         </div>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">「プロの予想家は勝っているのでは？」</h3>
-          <p className="text-slate-600">
+          <h3 className="text-sm font-medium text-slate-700">「プロの予想家は勝っているのでは？」</h3>
+          <p className="text-sm text-slate-600">
             長期間の回収率データを公開している予想家は少なく、
             公開している場合も<strong className="text-slate-800">生存者バイアス</strong>が存在します。
             100人が予想を始めれば、統計的に数人は短期的に高い回収率を出しますが、
             それは実力ではなく確率的な偏りです。
           </p>
-          <p className="text-slate-600">
+          <p className="text-sm text-slate-600">
             長期（1,000レース以上）で控除率25%を上回り続ける予想家の存在は、
             学術的には確認されていません。
           </p>
         </div>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">「非公開情報（インサイダー）があれば？」</h3>
-          <p className="text-slate-600">
+          <h3 className="text-sm font-medium text-slate-700">「非公開情報（インサイダー）があれば？」</h3>
+          <p className="text-sm text-slate-600">
             馬の体調不良、調教の手応え、厩舎の勝負気配など、
             公開されていない情報を持つ関係者は理論的に優位性を持ちえます。
             しかし、これは<strong className="text-slate-800">合法性の問題</strong>であり、
             競馬法で規制されている領域です。
           </p>
-          <p className="text-slate-600">
+          <p className="text-sm text-slate-600">
             また、関係者の購入行動はオッズに反映されるため、
             「不自然な人気の変動」として市場に情報が漏洩します。
             結果として、非公開情報の優位性も限定的です。
@@ -206,7 +206,7 @@ export function InsightCard() {
       {/* 他のギャンブルとの比較 */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">他のギャンブルとの比較</h2>
-        <p className="text-slate-600">
+        <p className="text-sm text-slate-600">
           競馬の3連複（控除率25%）は、ギャンブル全体の中でどのような位置づけなのかを比較します。
         </p>
 
@@ -256,17 +256,17 @@ export function InsightCard() {
         </div>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <p className="text-slate-600">
+          <p className="text-sm text-slate-600">
             競馬の控除率25%は宝くじ（55%）よりは有利ですが、
             カジノ（0.5〜5%）と比較するとかなり不利です。
             100回賭けた場合の期待損失で比較すると:
           </p>
-          <ul className="list-disc list-inside space-y-1 text-slate-600">
+          <ul className="list-disc list-inside space-y-1 text-sm text-slate-600">
             <li>宝くじ: 100回 × 300円 × 55% = <strong className="text-slate-800">16,500円の損失</strong></li>
             <li>競馬3連複: 100回 × 100円 × 25% = <strong className="text-slate-800">2,500円の損失</strong></li>
             <li>ブラックジャック: 100回 × 1,000円 × 1% = <strong className="text-slate-800">1,000円の損失</strong></li>
           </ul>
-          <p className="text-slate-600">
+          <p className="text-sm text-slate-600">
             どのギャンブルも長期的には必ず損失が発生します。
             違いは<strong className="text-slate-800">損失の速度</strong>だけです。
           </p>
@@ -276,14 +276,14 @@ export function InsightCard() {
       {/* よくある非効率な買い方 */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">よくある非効率な買い方</h2>
-        <p className="text-slate-600">
+        <p className="text-sm text-slate-600">
           多くの競馬ファンが無意識にやっている買い方の中に、数学的に損失を拡大するパターンがあります。
           バックテストの結果から、以下の行動が非効率であることが示されています。
         </p>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">「絞れないからボックスで広げる」</h3>
-          <p className="text-slate-600">
+          <h3 className="text-sm font-medium text-slate-700">「絞れないからボックスで広げる」</h3>
+          <p className="text-sm text-slate-600">
             5頭ボックス（10通り）や6頭ボックス（20通り）は、的中率が上がる代わりに
             <strong className="text-slate-800">回収率を確実に下げます</strong>。
             バックテストでは、購入点数を増やすほど回収率は単調に低下しました。
@@ -320,7 +320,7 @@ export function InsightCard() {
               </tbody>
             </table>
           </div>
-          <p className="text-slate-600">
+          <p className="text-sm text-slate-600">
             的中率は3倍近くに上がっていますが、回収率は45%から31%に低下しています。
             「絞れないから広げる」は<strong className="text-slate-800">損失を拡大する行為</strong>です。
             しかも実際のボックスは確率順位を無視した全組み合わせなので、
@@ -329,26 +329,26 @@ export function InsightCard() {
         </div>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">「的中率を上げれば勝てる」という誤解</h3>
-          <p className="text-slate-600">
+          <h3 className="text-sm font-medium text-slate-700">「的中率を上げれば勝てる」という誤解</h3>
+          <p className="text-sm text-slate-600">
             的中率と回収率は別の指標です。
             的中率を上げるために点数を増やすと、投資額が増える一方で、
             追加した組み合わせは確率が低い（=当たりにくい）ものです。
             結果として<strong className="text-slate-800">1レースあたりの損失額が増えます</strong>。
           </p>
-          <ul className="list-disc list-inside space-y-1 text-slate-600">
+          <ul className="list-disc list-inside space-y-1 text-sm text-slate-600">
             <li>Top 3: 1レースあたり300円投資 → 平均165円の損失</li>
             <li>Top 10: 1レースあたり1,000円投資 → 平均670円の損失</li>
             <li>Top 20: 1レースあたり2,000円投資 → 平均1,380円の損失</li>
           </ul>
-          <p className="text-slate-600">
+          <p className="text-sm text-slate-600">
             たまに当たる喜びは増えますが、トータルの損失も増えていきます。
           </p>
         </div>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">「人気馬同士のボックスなら堅い」</h3>
-          <p className="text-slate-600">
+          <h3 className="text-sm font-medium text-slate-700">「人気馬同士のボックスなら堅い」</h3>
+          <p className="text-sm text-slate-600">
             人気馬同士の組み合わせは的中確率が高い反面、<strong className="text-slate-800">オッズが低い</strong>ため、
             当たっても配当が投資額に見合いません。
             例えば5頭ボックス（10通り=1,000円）で的中しても、
@@ -358,8 +358,8 @@ export function InsightCard() {
         </div>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">「大穴を狙えば一発で取り戻せる」</h3>
-          <p className="text-slate-600">
+          <h3 className="text-sm font-medium text-slate-700">「大穴を狙えば一発で取り戻せる」</h3>
+          <p className="text-sm text-slate-600">
             高配当の組み合わせは的中確率が極めて低いため、
             <strong className="text-slate-800">当たるまでの累積損失が配当を上回る</strong>のが通常です。
             バックテストでは、的中した組み合わせの75%が確率順位47位以内でした。
@@ -371,27 +371,27 @@ export function InsightCard() {
       {/* ギャンブルの認知バイアス */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">ギャンブルの認知バイアス</h2>
-        <p className="text-slate-600">
+        <p className="text-sm text-slate-600">
           人間の脳はギャンブルにおいて合理的な判断を下すことが苦手です。
           以下の認知バイアスを知っておくことで、非合理な行動を避ける助けになります。
         </p>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">損失回避バイアス</h3>
-          <p className="text-slate-600">
+          <h3 className="text-sm font-medium text-slate-700">損失回避バイアス</h3>
+          <p className="text-sm text-slate-600">
             人は同じ金額の「利益」と「損失」を同等に感じません。
             1,000円を失う苦痛は、1,000円を得る喜びの<strong className="text-slate-800">約2倍</strong>の強さがあります（プロスペクト理論）。
             このため、損失を取り戻そうとして賭け金を増やす行動（いわゆる「追い上げ」）に陥りやすくなります。
           </p>
-          <p className="text-slate-600">
+          <p className="text-sm text-slate-600">
             追い上げは「負けるほど賭け金が増える」構造であり、
             控除率25%の環境では損失を加速させるだけです。
           </p>
         </div>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">ニアミス効果</h3>
-          <p className="text-slate-600">
+          <h3 className="text-sm font-medium text-slate-700">ニアミス効果</h3>
+          <p className="text-sm text-slate-600">
             「あと1頭で的中だった」という体験は、実際には完全に外れた場合と結果（損失額）は同じですが、
             脳は<strong className="text-slate-800">「惜しかった＝次は当たりそう」</strong>と誤解釈します。
             3連複では「2頭は当たっていた」というニアミスが頻繁に発生し、
@@ -400,8 +400,8 @@ export function InsightCard() {
         </div>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">サンクコストの誤謬</h3>
-          <p className="text-slate-600">
+          <h3 className="text-sm font-medium text-slate-700">サンクコストの誤謬</h3>
+          <p className="text-sm text-slate-600">
             「ここまで使ったお金を回収したい」という心理は、
             過去の投資（すでに失ったお金）に基づいて将来の判断を歪めます。
             過去の損失は<strong className="text-slate-800">取り戻せないコスト（埋没費用）</strong>であり、
@@ -411,8 +411,8 @@ export function InsightCard() {
         </div>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">ギャンブラーの誤謬</h3>
-          <p className="text-slate-600">
+          <h3 className="text-sm font-medium text-slate-700">ギャンブラーの誤謬</h3>
+          <p className="text-sm text-slate-600">
             「5レース連続で外れたから、次は当たるはず」という考えは誤りです。
             各レースは<strong className="text-slate-800">独立事象</strong>であり、
             過去の結果が次のレースの的中確率に影響を与えることはありません。
@@ -421,8 +421,8 @@ export function InsightCard() {
         </div>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">確証バイアス</h3>
-          <p className="text-slate-600">
+          <h3 className="text-sm font-medium text-slate-700">確証バイアス</h3>
+          <p className="text-sm text-slate-600">
             的中した体験は鮮明に記憶され、外れた体験は忘れやすい傾向があります。
             「あの予想法でよく当たる」と感じていても、
             <strong className="text-slate-800">実際に全レースの収支を記録する</strong>と、
@@ -434,7 +434,7 @@ export function InsightCard() {
       {/* このツールの使い方 */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">このツールの最適な使い方</h2>
-        <ul className="list-disc list-inside space-y-3 text-slate-600">
+        <ul className="list-disc list-inside space-y-3 text-sm text-slate-600">
           <li>
             <strong className="text-slate-800">確率構造の可視化として使う</strong>:
             どの組み合わせが相対的に有利かを確認し、自分の予想と照らし合わせる材料にします。
