@@ -4,14 +4,6 @@ import { ChevronUp, ChevronDown } from 'lucide-react'
 import type { CombinationResult, SortConfig } from '@/lib/calculator/types'
 import { RESULTS_PER_PAGE } from '@/lib/calculator/types'
 
-const TIER_LABELS = {
-  recommended: { text: '推奨', className: 'bg-emerald-100 text-emerald-700' },
-  promising: { text: '有望', className: 'bg-teal-100 text-teal-700' },
-  solid: { text: '堅実', className: 'bg-sky-100 text-sky-700' },
-  longshot: { text: '穴狙い', className: 'bg-amber-100 text-amber-700' },
-  avoid: { text: '非推奨', className: 'bg-slate-100 text-slate-500' },
-} as const
-
 type ResultsTableProps = {
   sortedCombinations: CombinationResult[]
   sortConfig: SortConfig
@@ -33,22 +25,22 @@ export function ResultsTable({
         <thead>
           <tr className="border-b border-slate-200">
             {[
-              { key: 'horses', label: '組合せ' },
-              { key: 'tier', label: '推奨度' },
-              { key: 'ev', label: '期待回収率' },
-              { key: 'probability', label: '確率' },
-              { key: 'approximateOdds', label: '予想オッズ' },
-            ].map(({ key, label }) => (
+              { key: 'rank', label: '順位', align: 'center' },
+              { key: 'horses', label: '組合せ', align: 'left' },
+              { key: 'probability', label: '確率', align: 'right' },
+              { key: 'ev', label: '期待回収率', align: 'right' },
+              { key: 'approximateOdds', label: '予想オッズ', align: 'right' },
+            ].map(({ key, label, align }) => (
               <th
                 key={key}
                 onClick={() => onSort(key as keyof CombinationResult)}
                 className={`
                   cursor-pointer p-2.5 text-xs text-slate-400
                   hover:text-slate-600 transition-colors
-                  ${key === 'horses' || key === 'tier' ? 'text-left' : 'text-right'}
+                  text-${align}
                 `}
               >
-                <div className={`flex items-center gap-1 ${key === 'horses' || key === 'tier' ? 'justify-start' : 'justify-end'}`}>
+                <div className={`flex items-center gap-1 justify-${align === 'left' ? 'start' : align === 'center' ? 'center' : 'end'}`}>
                   {label}
                   {sortConfig?.key === key && (
                     <span className="text-slate-600">
@@ -67,30 +59,31 @@ export function ResultsTable({
           {sortedCombinations
             .slice(0, showAllResults ? undefined : RESULTS_PER_PAGE.desktop)
             .map((combo, index) => {
-              const tierInfo = TIER_LABELS[combo.tier]
               return (
-                <tr key={index} className={`border-b border-slate-50 hover:bg-slate-50 transition-colors ${
-                  (combo.tier === 'recommended' || combo.tier === 'promising') && combo.probability < 0.001 ? 'opacity-50' : ''
-                }`}>
+                <tr key={index} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                  <td className="text-center p-2.5">
+                    <span className={`inline-block w-7 text-center text-xs font-bold tabular-nums rounded-md py-0.5 ${
+                      combo.rank <= 3 ? 'bg-slate-800 text-white' :
+                      combo.rank <= 10 ? 'bg-slate-200 text-slate-700' :
+                      'text-slate-400'
+                    }`}>
+                      {combo.rank}
+                    </span>
+                  </td>
                   <td className="text-left p-2.5 text-sm font-medium text-slate-700 tabular-nums">
                     {combo.horses.join('-')}
                   </td>
-                  <td className="p-2.5">
-                    <span className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold ${tierInfo.className}`}>
-                      {tierInfo.text}
-                    </span>
+                  <td className={`text-right p-2.5 text-sm tabular-nums ${
+                    combo.rank <= 3 ? 'text-slate-800 font-medium' :
+                    combo.rank <= 10 ? 'text-slate-600' :
+                    'text-slate-400'
+                  }`}>
+                    {(combo.probability * 100).toFixed(2)}%
                   </td>
                   <td className={`text-right p-2.5 text-sm font-bold tabular-nums ${
                     combo.ev >= 1.0 ? 'text-emerald-700' : 'text-rose-600'
                   }`}>
                     {Math.round(combo.ev * 100)}%
-                  </td>
-                  <td className={`text-right p-2.5 text-sm tabular-nums ${
-                    combo.probability >= 0.005 ? 'text-slate-800 font-medium' :
-                    combo.probability >= 0.001 ? 'text-slate-600' :
-                    'text-slate-400'
-                  }`}>
-                    {(combo.probability * 100).toFixed(2)}%
                   </td>
                   <td className="text-right p-2.5 text-sm tabular-nums text-slate-600">
                     {combo.approximateOdds.toFixed(1)}

@@ -1,5 +1,3 @@
-export type RecommendationTier = 'recommended' | 'promising' | 'solid' | 'longshot' | 'avoid'
-
 export type CombinationResult = {
   horses: number[]
   stake: number
@@ -7,8 +5,7 @@ export type CombinationResult = {
   expectedReturn: number
   probability: number
   ev: number
-  tier: RecommendationTier
-  comboStability: number
+  rank: number
 }
 
 export type HorseValueStats = {
@@ -17,7 +14,7 @@ export type HorseValueStats = {
   placeProbability: number
   stability: number
   totalCombinations: number
-  recommendedCount: number
+  topNCount: number
   averageEV: number
   bestEV: number
 }

@@ -23,9 +23,71 @@ export function InsightCard() {
       <header>
         <h1 className="text-2xl md:text-3xl font-bold text-slate-800">考察</h1>
         <p className="text-sm text-slate-400 mt-1">
-          このモデルの理論的背景と限界について
+          バックテストの結果と、このモデルの理論的背景について
         </p>
       </header>
+
+      {/* バックテスト結果の要約 */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-slate-800">バックテストの結果</h2>
+        <p className="text-slate-600">
+          774レース（2025/11〜2026/02）のバックテストで、確率モデルの性能を検証しました。
+        </p>
+
+        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
+          <h3 className="text-base font-medium text-slate-700">確率ランキングは有効</h3>
+          <p className="text-slate-600">
+            的中した組み合わせの確率順位の中央値は16位（平均445通り中）。
+            ランダムに選んだ場合の中央値は223位になるため、モデルは<strong className="text-slate-800">ランダムの約14倍の精度</strong>で的中組合せを上位にランク付けしています。
+          </p>
+          <ul className="list-disc list-inside space-y-1 text-slate-600">
+            <li>Top 1: 的中率 8.4%（ランダムの38倍）</li>
+            <li>Top 3: 的中率 21.3%（ランダムの32倍）</li>
+            <li>Top 5: 的中率 28.6%（ランダムの26倍）</li>
+            <li>Top 10: 的中率 39.1%（ランダムの18倍）</li>
+          </ul>
+        </div>
+
+        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
+          <h3 className="text-base font-medium text-slate-700">利益は出ない</h3>
+          <p className="text-slate-600">
+            しかし、最も回収率の高いTop 1戦略でも回収率は47%でした。
+            確率順位は有効でも、<strong className="text-slate-800">利益を出すことはできません</strong>。
+            これは市場効率仮説で説明できます。
+          </p>
+        </div>
+      </section>
+
+      {/* 市場効率仮説 */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-slate-800">なぜ利益が出ないのか: 市場効率仮説</h2>
+
+        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
+          <h3 className="text-base font-medium text-slate-700">オッズに全ての情報が織り込まれている</h3>
+          <p className="text-slate-600">
+            競馬のオッズは、過去成績・血統・調教タイム・天候・馬場状態・騎手の力量など、
+            あらゆる公開情報を市場参加者が織り込んだ結果です。
+            このモデルはそのオッズから確率を推定しているため、
+            <strong className="text-slate-800">オッズにすでに含まれている情報以上の知見を得ることができません</strong>。
+          </p>
+        </div>
+
+        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
+          <h3 className="text-base font-medium text-slate-700">構造的な75%の壁</h3>
+          <p className="text-slate-600">
+            JRAの3連複控除率は25%（払戻率75%）。全組み合わせを均等に購入した場合、
+            回収率は確実に75%になります。
+            オッズから導出したモデルでは、どのような重み付けをしても、
+            加重平均の回収率はこの75%に収束します。
+          </p>
+          <div className="overflow-x-auto">
+            <BlockMath
+              math="\text{加重平均回収率} = \frac{\sum (P^{\text{ours}}_{ijk} \times O_{ijk} \times 100)}{\sum 100} \approx 75\%"
+              style={longMathStyle}
+            />
+          </div>
+        </div>
+      </section>
 
       {/* なぜ単一モデルだと75%に固定されるか */}
       <section className="space-y-4">
@@ -36,8 +98,6 @@ export function InsightCard() {
         </p>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">単一モデルの場合の計算過程</h3>
-          <p className="text-slate-600">オッズと確率を同じ確率分布から導出すると：</p>
           <div className="overflow-x-auto">
             <BlockMath
               math="\text{回収率} = \frac{\sum (S_{ijk} \times \frac{0.75}{P_{ijk}} \times P_{ijk})}{\sum S_{ijk}} = \frac{0.75 \times \sum S_{ijk}}{\sum S_{ijk}} = 0.75"
@@ -47,7 +107,7 @@ export function InsightCard() {
           <p className="text-slate-600">
             分子と分母の <InlineMath math="P_{ijk}" /> が完全に相殺されるため、
             どのような重み配分をしても回収率は変わりません。
-            オッズを生成した情報と同じ情報で確率を評価しているので、新しい知見が入り込む余地がないのです。
+            このため、本ツールでは単勝オッズと複勝オッズの2つの異なるデータソースを使っています。
           </p>
         </div>
       </section>
@@ -56,40 +116,11 @@ export function InsightCard() {
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">単勝 × 複勝の2データソースアプローチ</h2>
         <p className="text-slate-600">
-          このツールでは、<strong className="text-slate-800">単勝オッズ</strong>と<strong className="text-slate-800">複勝オッズ</strong>という異なるデータソースを使うことで、
-          この問題を解決しています。
+          <strong className="text-slate-800">単勝オッズ</strong>（市場モデル）と<strong className="text-slate-800">複勝オッズ</strong>（確率モデル）という
+          異なるデータソースを使うことで、75%の壁からのズレを生み出しています。
         </p>
 
         <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">市場モデル（オッズ推定用）：単勝オッズベース</h3>
-          <div className="overflow-x-auto">
-            <BlockMath
-              math="P^{\text{market}}_{ijk} \propto \hat{p}^{\text{win}}_i \times \hat{p}^{\text{win}}_j \times \hat{p}^{\text{win}}_k"
-              style={longMathStyle}
-            />
-          </div>
-          <p className="text-slate-600">
-            単勝オッズから導出した各馬の勝率の積。
-            市場がこの近似でオッズを形成していると仮定して、3連複オッズを推定します。
-          </p>
-        </div>
-
-        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">確率モデル（的中確率推定用）：複勝オッズベース</h3>
-          <div className="overflow-x-auto">
-            <BlockMath
-              math="P^{\text{ours}}_{ijk} \propto \hat{p}^{\text{place}}_i \times \hat{p}^{\text{place}}_j \times \hat{p}^{\text{place}}_k"
-              style={longMathStyle}
-            />
-          </div>
-          <p className="text-slate-600">
-            複勝オッズから導出した3着以内確率の積。
-            3着以内という3連複に直結する情報を持つ複勝市場のデータを利用して、的中確率を推定します。
-          </p>
-        </div>
-
-        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">2つのデータソースのズレがバリューを生む</h3>
           <div className="overflow-x-auto">
             <BlockMath
               math="\text{回収率} = 0.75 \times \frac{\hat{P}^{\text{ours}}_{ijk}}{\hat{P}^{\text{market}}_{ijk}}"
@@ -97,107 +128,35 @@ export function InsightCard() {
             />
           </div>
           <p className="text-slate-600">
-            単勝オッズは「1着確率」を反映し、複勝オッズは「3着以内確率」を反映しています。
-            この2つの市場が同じ馬を異なる尺度で評価しているため、
-            <InlineMath math="\hat{P}^{\text{ours}}_{ijk} \neq \hat{P}^{\text{market}}_{ijk}" /> となり、
-            回収率が75%から変動します。
+            単勝は「1着確率」を、複勝は「3着以内確率」を反映しています。
+            この2つの市場の評価のズレにより、個別の組み合わせの回収率は75%から変動します。
+            ただし、加重平均としては依然として75%前後に収束するため、全体で利益を出すことはできません。
           </p>
         </div>
       </section>
 
-      {/* 安定度と2軸評価 */}
+      {/* このツールの使い方 */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-800">安定度の意味と2軸評価</h2>
-
-        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">安定度 = 単勝オッズ ÷ 複勝オッズ中央値</h3>
-          <p className="text-slate-600">
-            安定度は、その馬の「1着確率に対する3着以内確率の比」を表しています。
-          </p>
-          <ul className="list-disc list-inside space-y-2 text-slate-600">
-            <li>
-              <strong className="text-slate-800">安定度が高い馬</strong>（例: 3.0以上）：単勝で評価される能力に比べて、3着以内に来る能力が相対的に高い馬。
-              「勝ち切れないが堅実に上位に来る」タイプで、3連複向きです。
-            </li>
-            <li>
-              <strong className="text-slate-800">安定度が低い馬</strong>（例: 2.0以下）：1着か惨敗かの一発勝負タイプ。
-              本命馬にありがちなパターンで、3連複では過大評価されやすい傾向があります。
-            </li>
-          </ul>
-        </div>
-
-        <div className="space-y-3 pl-4 border-l-2 border-slate-200">
-          <h3 className="text-base font-medium text-slate-700">なぜ回収率だけでなく2軸で判定するのか</h3>
-          <p className="text-slate-600">
-            回収率が高い組み合わせには2つのパターンがあります。
-          </p>
-          <ol className="list-decimal list-inside space-y-2 text-slate-600">
-            <li>
-              <strong className="text-slate-800">本当に割安な組み合わせ</strong>：的中確率も高く、かつ安定度も高い。
-              複勝市場が示す「3着以内に来やすい」馬の組み合わせ。
-            </li>
-            <li>
-              <strong className="text-slate-800">モデルの構造的な歪みで高く出ているだけの組み合わせ</strong>：穴馬ばかりの組み合わせなど、
-              確率は極めて低いが比率の計算上だけ回収率が高く出るケース。
-            </li>
-          </ol>
-          <p className="text-slate-600">
-            2軸評価では、的中確率（複勝ベース）と安定度積の両方が中央値以上の組み合わせだけを「推奨」とすることで、
-            パターン1の質の高い組み合わせを抽出しています。
-          </p>
-        </div>
-      </section>
-
-      {/* どのような組み合わせでズレが出るか */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-800">どのような組み合わせでズレが大きくなるか</h2>
-
-        <div className="space-y-4 pl-4 border-l-2 border-slate-200">
-          <div className="space-y-2">
-            <h3 className="text-base font-medium text-emerald-700">安定度の高い馬の組合せ（バリューベット候補）</h3>
-            <p className="text-slate-600">
-              安定度の高い馬同士の組み合わせは、複勝ベースの確率が単勝ベースの市場評価を上回りやすく、
-              回収率が高くなる傾向があります。
-              「勝てないが3着には来る」タイプの馬が揃った組み合わせは、
-              市場が過小評価しているバリューベットの候補です。
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="text-base font-medium text-rose-600">安定度の低い馬の組合せ（割高な買い目）</h3>
-            <p className="text-slate-600">
-              本命馬ばかりの組み合わせは、単勝ベースでは高確率に見えますが、
-              複勝ベースではそれほど有利にならないことがあります。
-              安定度の低い馬の組み合わせは、市場が過大評価している割高な買い目になりがちです。
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* 限界と注意点 */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-800">このモデルの限界</h2>
+        <h2 className="text-lg font-semibold text-slate-800">このツールの最適な使い方</h2>
         <ul className="list-disc list-inside space-y-3 text-slate-600">
           <li>
-            <strong className="text-slate-800">回収率100%超が現実的とは限らない</strong>：回収率が100%を超える組み合わせは
-            「このモデルの計算上は有利」というだけで、実際のレースで利益が保証されるわけではありません。
-            あくまで2つの異なる市場データの比較に基づく相対評価です。
+            <strong className="text-slate-800">確率構造の可視化として使う</strong>:
+            どの組み合わせが相対的に有利かを確認し、自分の予想と照らし合わせる材料にします。
           </li>
           <li>
-            <strong className="text-slate-800">市場モデルの仮定</strong>：実際の3連複市場が単純積モデルで価格形成されているという仮定に基づいています。
-            実際の市場はより複雑な要因で動くため、この仮定は近似です。
+            <strong className="text-slate-800">購入点数を絞る</strong>:
+            バックテストの結果、少数精鋭（3〜5点）が最も回収率が高い戦略です。
+            点数を増やすほど的中率は上がりますが、損失率も大きくなります。
           </li>
           <li>
-            <strong className="text-slate-800">複勝オッズの範囲</strong>：複勝オッズは低〜高の範囲で提供され、中央値を使用しています。
-            実際の結果はこの範囲内のどこかに落ち着くため、誤差が含まれます。
+            <strong className="text-slate-800">過信しない</strong>:
+            このモデルはオッズの構造を可視化しているだけであり、
+            利益を保証するものではありません。購入は自己責任で行ってください。
           </li>
           <li>
-            <strong className="text-slate-800">データソースの同一性</strong>：単勝と複勝は異なる市場ですが、同じ出走馬・同じレースに対する
-            ベッティング市場です。完全に独立した情報源ではないため、ズレの幅にも限界があります。
-          </li>
-          <li>
-            <strong className="text-slate-800">レース展開の未考慮</strong>：逃げ・差し・追い込みなどの脚質、枠順、馬場状態などの
-            レース固有の要因は考慮されていません。
+            <strong className="text-slate-800">自分の情報と組み合わせる</strong>:
+            このモデルにない情報（馬場読み、パドック観察、レース展開予想など）を
+            加味することで、モデル以上の判断が可能になる場合があります。
           </li>
         </ul>
       </section>

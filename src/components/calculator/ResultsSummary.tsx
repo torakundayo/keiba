@@ -12,7 +12,7 @@ export function ResultsSummary({ results }: ResultsSummaryProps) {
   const overallEV = results.weightedReturn / results.totalStakes
 
   const recommendedStats = useMemo(() => {
-    const recommended = results.combinations.filter(c => c.tier === 'recommended')
+    const recommended = results.combinations.filter(c => c.rank <= 10)
     if (recommended.length === 0) return null
 
     const totalStakes = recommended.reduce((sum, c) => sum + c.stake, 0)

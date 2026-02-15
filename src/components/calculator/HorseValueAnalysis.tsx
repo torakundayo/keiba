@@ -20,7 +20,7 @@ export function HorseValueAnalysis({ horseStats }: HorseValueAnalysisProps) {
         </p>
       ) : (
         <p className="text-xs text-slate-400 leading-relaxed">
-          各馬が推奨組合せにどれだけ含まれているかを示します。
+          各馬がTop 10組合せにどれだけ含まれているかを示します。
         </p>
       )}
       <div className="overflow-x-auto rounded-xl border border-slate-100">
@@ -35,7 +35,7 @@ export function HorseValueAnalysis({ horseStats }: HorseValueAnalysisProps) {
                   <th className="text-right p-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">安定度</th>
                 </>
               )}
-              <th className="text-right p-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">推奨数</th>
+              <th className="text-right p-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Top 10</th>
               <th className="text-right p-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">全組合せ</th>
               <th className="text-right p-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">平均回収</th>
               <th className="text-right p-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">最高回収</th>
@@ -43,15 +43,15 @@ export function HorseValueAnalysis({ horseStats }: HorseValueAnalysisProps) {
           </thead>
           <tbody>
             {horseStats.map((stat) => {
-              const recRate = stat.totalCombinations > 0
-                ? stat.recommendedCount / stat.totalCombinations
+              const topNRate = stat.totalCombinations > 0
+                ? stat.topNCount / stat.totalCombinations
                 : 0
 
               return (
                 <tr
                   key={stat.horseNumber}
                   className={`border-b border-slate-50 transition-colors duration-150 ${
-                    stat.recommendedCount === 0 ? 'opacity-40' : 'hover:bg-amber-50/20'
+                    stat.topNCount === 0 ? 'opacity-40' : 'hover:bg-amber-50/20'
                   }`}
                 >
                   <td className="p-3">
@@ -83,11 +83,11 @@ export function HorseValueAnalysis({ horseStats }: HorseValueAnalysisProps) {
                     </>
                   )}
                   <td className="p-3 text-right tabular-nums">
-                    <span className={`font-bold ${stat.recommendedCount > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
-                      {stat.recommendedCount}
+                    <span className={`font-bold ${stat.topNCount > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      {stat.topNCount}
                     </span>
                     <span className="text-slate-400 text-xs ml-1">
-                      ({(recRate * 100).toFixed(0)}%)
+                      ({(topNRate * 100).toFixed(0)}%)
                     </span>
                   </td>
                   <td className="p-3 text-right text-slate-500 tabular-nums">{stat.totalCombinations}</td>

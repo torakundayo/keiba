@@ -1,5 +1,4 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from 'react'
-import type { RecommendationTier } from '@/lib/calculator/types'
 import { calculateResultsForStakes } from '@/lib/calculator/calculateResults'
 import type {
   CalculationResult,
@@ -22,7 +21,7 @@ export function useCalculator() {
   const resultsRef = useRef<HTMLDivElement>(null)
   const [displayMode, setDisplayMode] = useState<'card' | 'table'>('table')
   const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: 'tier',
+    key: 'rank',
     direction: 'asc',
   })
   const [loadingRaceId, setLoadingRaceId] = useState<string | null>(null)
@@ -30,20 +29,12 @@ export function useCalculator() {
   const [activeRaceUrl, setActiveRaceUrl] = useState<string | null>(null)
   const [activeRaceName, setActiveRaceName] = useState('')
   const [activeRaceDate, setActiveRaceDate] = useState('')
-  const [tierFilter, setTierFilter] = useState<string>('all')
-
-  const TIER_ORDER: Record<string, number> = {
-    recommended: 0,
-    promising: 1,
-    solid: 2,
-    longshot: 3,
-    avoid: 4,
-  }
+  const [topNFilter, setTopNFilter] = useState<string>('all')
 
   const handleSort = (key: keyof CombinationResult) => {
     setSortConfig((currentConfig) => {
       if (!currentConfig || currentConfig.key !== key) {
-        return { key, direction: key === 'tier' ? 'asc' : 'desc' }
+        return { key, direction: key === 'horses' || key === 'rank' ? 'asc' : 'desc' }
       }
       return { key, direction: currentConfig.direction === 'asc' ? 'desc' : 'asc' }
     })
@@ -61,14 +52,6 @@ export function useCalculator() {
           : bStr.localeCompare(aStr)
       }
 
-      if (sortConfig.key === 'tier') {
-        const tierDiff = TIER_ORDER[a.tier] - TIER_ORDER[b.tier]
-        const dir = sortConfig.direction === 'asc' ? 1 : -1
-        if (tierDiff !== 0) return tierDiff * dir
-        // 同じtier内は確率降順
-        return b.probability - a.probability
-      }
-
       const aValue = a[sortConfig.key]
       const bValue = b[sortConfig.key]
       return sortConfig.direction === 'asc'
@@ -78,9 +61,10 @@ export function useCalculator() {
   }, [results, sortConfig])
 
   const filteredCombinations = useMemo(() => {
-    if (tierFilter === 'all') return sortedCombinations
-    return sortedCombinations.filter(c => c.tier === tierFilter)
-  }, [sortedCombinations, tierFilter])
+    if (topNFilter === 'all') return sortedCombinations
+    const n = parseInt(topNFilter, 10)
+    return sortedCombinations.filter(c => c.rank <= n)
+  }, [sortedCombinations, topNFilter])
 
   useEffect(() => {
     setStakes(Array(18).fill(0))
@@ -151,7 +135,7 @@ export function useCalculator() {
       setActiveRaceUrl(raceUrl)
       setActiveRaceName(raceName ?? '')
       setActiveRaceDate(raceDate ?? '')
-      setTierFilter('all')
+      setTopNFilter('all')
 
       // 一括更新（useEffectが自動計算する）
       setOdds(newOdds)
@@ -190,7 +174,7 @@ export function useCalculator() {
     setActiveRaceUrl(null)
     setActiveRaceName('')
     setActiveRaceDate('')
-    setTierFilter('all')
+    setTopNFilter('all')
   }
 
   return {
@@ -213,8 +197,8 @@ export function useCalculator() {
     activeRaceUrl,
     activeRaceName,
     activeRaceDate,
-    tierFilter,
-    setTierFilter,
+    topNFilter,
+    setTopNFilter,
 
     handleSort,
     importRaceOdds,

@@ -1,5 +1,5 @@
 import { harvilleTrifecta } from './harville'
-import type { CalculationResult, CombinationResult, HorseValueStats, PlaceOdds, RecommendationTier } from './types'
+import type { CalculationResult, CombinationResult, HorseValueStats, PlaceOdds } from './types'
 
 /**
  * 複勝オッズが利用可能かチェック
@@ -9,16 +9,23 @@ function hasPlaceOdds(placeOdds: PlaceOdds[]): boolean {
 }
 
 /**
- * 複勝オッズ + 単勝オッズモデル（新モデル）
+ * 確率降順でランク付け（1-based）
+ */
+function assignRanks(results: CombinationResult[]): void {
+  const indices = Array.from({ length: results.length }, (_, i) => i)
+    .sort((a, b) => results[b].probability - results[a].probability)
+  for (let r = 0; r < indices.length; r++) {
+    results[indices[r]].rank = r + 1
+  }
+}
+
+/**
+ * 複勝オッズ + 単勝オッズモデル
  *
  * 単勝オッズ → P(1着) の市場評価 → 3連複の市場オッズ推定に使用
  * 複勝オッズ → P(3着以内) の市場評価 → 3連複の確率推定に使用
  *
- * 安定度 = 単勝オッズ / 複勝オッズ中央値
- *   → 高いほど「勝ちきれないが3着には来やすい」馬（3連複向き）
- *
  * EV = 0.75 × P_place_model / P_win_model
- *   → 複勝ベースの確率が単勝ベースの市場評価より高い組合せ = バリュー
  */
 function calculateWithPlaceOdds(
   includedIndices: number[],
@@ -59,7 +66,6 @@ function calculateWithPlaceOdds(
   const placeProbs = new Float64Array(comboCount)
   const comboHorses: number[][] = new Array(comboCount)
   const comboLocalIndices: [number, number, number][] = new Array(comboCount)
-  const comboStabilities = new Float64Array(comboCount)
 
   let idx = 0
   let totalWinProb = 0
@@ -72,7 +78,6 @@ function calculateWithPlaceOdds(
         placeProbs[idx] = pPlace[i] * pPlace[j] * pPlace[k]
         comboHorses[idx] = [includedIndices[i] + 1, includedIndices[j] + 1, includedIndices[k] + 1]
         comboLocalIndices[idx] = [i, j, k]
-        comboStabilities[idx] = stability[i] * stability[j] * stability[k]
         totalWinProb += winProbs[idx]
         totalPlaceProb += placeProbs[idx]
         idx++
@@ -108,8 +113,7 @@ function calculateWithPlaceOdds(
       expectedReturn: comboReturn,
       probability: P_ours,
       ev,
-      tier: 'avoid',
-      comboStability: comboStabilities[c],
+      rank: 0,
     }
 
     sumWeightedReturn += comboReturn * P_ours
@@ -119,26 +123,17 @@ function calculateWithPlaceOdds(
     if (ev >= 1.0) valueBetCount++
   }
 
-  // 中央値: 的中確率と安定度積の両方
+  // 中央値: 的中確率
   const sortedProbs = [...probabilities].sort((a, b) => a - b)
   const medianProbability = comboCount % 2 === 0
     ? (sortedProbs[comboCount / 2 - 1] + sortedProbs[comboCount / 2]) / 2
     : sortedProbs[Math.floor(comboCount / 2)]
 
-  const sortedStabilities = Array.from(comboStabilities).sort((a, b) => a - b)
-  const medianStability = comboCount % 2 === 0
-    ? (sortedStabilities[comboCount / 2 - 1] + sortedStabilities[comboCount / 2]) / 2
-    : sortedStabilities[Math.floor(comboCount / 2)]
+  // 確率降順でランク付け
+  assignRanks(combinationResults)
 
-  // 2軸推奨度分類
-  for (let c = 0; c < comboCount; c++) {
-    const combo = combinationResults[c]
-    combo.tier = classifyTier2Axis(combo.probability, medianProbability, combo.comboStability, medianStability, combo.ev)
-  }
-
-  // 馬別統計（複勝確率 + 安定度の2軸）
+  // 馬別統計
   const horseStats: HorseValueStats[] = []
-  // 複勝確率の生値（正規化前）
   const rawPlaceProbs = new Float64Array(n)
   for (let h = 0; h < n; h++) {
     const idxH = includedIndices[h]
@@ -148,7 +143,7 @@ function calculateWithPlaceOdds(
 
   for (let h = 0; h < n; h++) {
     let totalCombos = 0
-    let recommendedCombos = 0
+    let topNCombos = 0
     let sumEV = 0
     let bestHorseEV = -Infinity
 
@@ -160,8 +155,8 @@ function calculateWithPlaceOdds(
         if (combinationResults[c].ev > bestHorseEV) {
           bestHorseEV = combinationResults[c].ev
         }
-        if (combinationResults[c].tier === 'recommended') {
-          recommendedCombos++
+        if (combinationResults[c].rank <= 10) {
+          topNCombos++
         }
       }
     }
@@ -172,13 +167,13 @@ function calculateWithPlaceOdds(
       placeProbability: rawPlaceProbs[h],
       stability: stability[h],
       totalCombinations: totalCombos,
-      recommendedCount: recommendedCombos,
+      topNCount: topNCombos,
       averageEV: totalCombos > 0 ? sumEV / totalCombos : 0,
       bestEV: bestHorseEV,
     })
   }
 
-  // 複勝確率の降順でソート（的中可能性が高い順）
+  // 複勝確率の降順でソート
   horseStats.sort((a, b) => b.placeProbability - a.placeProbability)
 
   return {
@@ -276,8 +271,7 @@ function calculateWithHarville(
       expectedReturn: comboReturn,
       probability: P_harville,
       ev,
-      tier: 'avoid',
-      comboStability: 0,
+      rank: 0,
     }
 
     sumWeightedReturn += comboReturn * P_harville
@@ -292,15 +286,13 @@ function calculateWithHarville(
     ? (sortedProbs[comboCount / 2 - 1] + sortedProbs[comboCount / 2]) / 2
     : sortedProbs[Math.floor(comboCount / 2)]
 
-  for (let c = 0; c < comboCount; c++) {
-    const combo = combinationResults[c]
-    combo.tier = classifyTier(combo.ev, combo.probability, medianProbability)
-  }
+  // 確率降順でランク付け
+  assignRanks(combinationResults)
 
   const horseStats: HorseValueStats[] = []
   for (let h = 0; h < n; h++) {
     let totalCombos = 0
-    let recommendedCombos = 0
+    let topNCombos = 0
     let sumEV = 0
     let bestHorseEV = -Infinity
 
@@ -310,7 +302,7 @@ function calculateWithHarville(
         totalCombos++
         sumEV += combinationResults[c].ev
         if (combinationResults[c].ev > bestHorseEV) bestHorseEV = combinationResults[c].ev
-        if (combinationResults[c].tier === 'recommended') recommendedCombos++
+        if (combinationResults[c].rank <= 10) topNCombos++
       }
     }
 
@@ -320,13 +312,13 @@ function calculateWithHarville(
       placeProbability: 0,
       stability: 0,
       totalCombinations: totalCombos,
-      recommendedCount: recommendedCombos,
+      topNCount: topNCombos,
       averageEV: totalCombos > 0 ? sumEV / totalCombos : 0,
       bestEV: bestHorseEV,
     })
   }
 
-  horseStats.sort((a, b) => b.recommendedCount - a.recommendedCount || b.averageEV - a.averageEV)
+  horseStats.sort((a, b) => b.topNCount - a.topNCount || b.averageEV - a.averageEV)
 
   return {
     totalStakes: totalStakesAll,
@@ -373,51 +365,4 @@ export const calculateResultsForStakes = (
     console.error('Error in calculateResultsForStakes:', error)
     return null
   }
-}
-
-/**
- * 2軸推奨度分類（複勝オッズモデル用）
- *
- * 軸1: 的中確率（複勝ベース） — 中央値との比較
- * 軸2: 期待回収率（安定度積） — 中央値との比較
- *
- * - 推奨: 確率≥中央値 & 安定度≥中央値 → 当たりやすく割安
- * - 有望: 確率≥中央値 & 安定度<中央値 & EV≥1.0 → 当たりやすく、期待回収率も高い
- * - 堅実: 確率≥中央値 & 安定度<中央値 & EV<1.0 → 当たりやすいが配当面は不利
- * - 穴狙い: 確率<中央値 & 安定度≥中央値 → 当たりにくいが割安
- * - 非推奨: 確率<中央値 & 安定度<中央値 → 当たりにくく割高
- */
-function classifyTier2Axis(
-  probability: number,
-  medianProbability: number,
-  comboStability: number,
-  medianStability: number,
-  ev: number,
-): RecommendationTier {
-  const highProb = probability >= medianProbability
-  const highValue = comboStability >= medianStability
-  if (highProb && highValue) return 'recommended'
-  if (highProb) return ev >= 1.0 ? 'promising' : 'solid'
-  if (highValue) return 'longshot'
-  return 'avoid'
-}
-
-/**
- * 推奨度分類（Harvilleフォールバック用）
- *
- * 複勝オッズがない場合はEVと確率の1軸で分類。
- * 新しいtier名に統一: recommended / solid / longshot / avoid
- */
-function classifyTier(
-  ev: number,
-  probability: number,
-  medianProbability: number,
-): RecommendationTier {
-  if (ev >= 1.0) {
-    return probability >= medianProbability ? 'recommended' : 'longshot'
-  }
-  if (ev >= 0.90) {
-    return 'solid'
-  }
-  return 'avoid'
 }

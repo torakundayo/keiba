@@ -46,8 +46,8 @@ export default function TrifectaReturnCalculator() {
     activeRaceUrl,
     activeRaceName,
     activeRaceDate,
-    tierFilter,
-    setTierFilter,
+    topNFilter,
+    setTopNFilter,
     handleSort,
     importRaceOdds,
     toggleHorse,
@@ -206,8 +206,8 @@ export default function TrifectaReturnCalculator() {
 
             <FilterBar
               combinations={sortedCombinations}
-              activeFilter={tierFilter}
-              onFilterChange={setTierFilter}
+              activeFilter={topNFilter}
+              onFilterChange={setTopNFilter}
             />
 
             {/* Display mode toggle + count */}

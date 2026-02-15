@@ -15,7 +15,7 @@ import * as cheerio from 'cheerio'
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
 import { calculateResultsForStakes } from '../src/lib/calculator/calculateResults'
-import type { PlaceOdds, RecommendationTier } from '../src/lib/calculator/types'
+import type { PlaceOdds } from '../src/lib/calculator/types'
 
 // ===================== Configuration =====================
 
@@ -48,11 +48,10 @@ interface CachedRace {
   trifectaPayout: number
   trifectaCombo: number[]
   totalCombinations: number
-  tierCounts: Record<string, number>
-  winningComboTier: RecommendationTier | null
+  winComboRank: number
   strategies: {
     name: string
-    tiers: string[]
+    n: number
     combos: number
     cost: number
     hit: boolean
@@ -67,13 +66,14 @@ interface Cache {
 
 interface StrategyDef {
   name: string
-  tiers: RecommendationTier[]
+  n: number
 }
 
 const STRATEGIES: StrategyDef[] = [
-  { name: '推奨のみ', tiers: ['recommended'] },
-  { name: '推奨＋有望', tiers: ['recommended', 'promising'] },
-  { name: '有望のみ', tiers: ['promising'] },
+  { name: 'Top 1', n: 1 },
+  { name: 'Top 3', n: 3 },
+  { name: 'Top 5', n: 5 },
+  { name: 'Top 10', n: 10 },
 ]
 
 // ===================== Utilities =====================
@@ -397,50 +397,26 @@ function processRace(
 
   const combos = calcResult.combinations
 
-  // Count tiers
-  const tierCounts: Record<string, number> = {
-    recommended: 0,
-    promising: 0,
-    solid: 0,
-    longshot: 0,
-    avoid: 0,
-  }
-  for (const c of combos) {
-    tierCounts[c.tier]++
-  }
-
-  // Find winning combo's tier in our model
+  // Find winning combo's rank
   const winComboKey = results.trifectaCombo.join('-')
-
-  let winningComboTier: RecommendationTier | null = null
+  let winComboRank = -1
   for (const c of combos) {
     const key = [...c.horses].sort((a, b) => a - b).join('-')
     if (key === winComboKey) {
-      winningComboTier = c.tier
+      winComboRank = c.rank
       break
     }
   }
 
-  // Evaluate strategies
+  // Evaluate Top-N strategies
   const strategyResults = STRATEGIES.map(strat => {
-    const matchingCombos = combos.filter(c =>
-      (strat.tiers as string[]).includes(c.tier)
-    )
-    const combosCount = matchingCombos.length
+    const combosCount = Math.min(strat.n, combos.length)
     const cost = combosCount * 100
-
-    let hit = false
-    for (const c of matchingCombos) {
-      const key = [...c.horses].sort((a, b) => a - b).join('-')
-      if (key === winComboKey) {
-        hit = true
-        break
-      }
-    }
+    const hit = winComboRank > 0 && winComboRank <= strat.n
 
     return {
       name: strat.name,
-      tiers: strat.tiers as string[],
+      n: strat.n,
       combos: combosCount,
       cost,
       hit,
@@ -461,8 +437,7 @@ function processRace(
     trifectaPayout: results.trifectaPayout,
     trifectaCombo: results.trifectaCombo,
     totalCombinations: combos.length,
-    tierCounts,
-    winningComboTier,
+    winComboRank,
     strategies: strategyResults,
   }
 }
@@ -499,7 +474,7 @@ function generateSummary(cache: Cache) {
 
     return {
       name: strat.name,
-      tiers: strat.tiers,
+      n: strat.n,
       totalRaces: racesWithCombos,
       totalCost,
       totalPayout,
@@ -511,22 +486,8 @@ function generateSummary(cache: Cache) {
     }
   })
 
-  // Tier distribution: how often does each tier's combo actually win?
-  const tierDist: Record<string, number> = {
-    recommended: 0,
-    promising: 0,
-    solid: 0,
-    longshot: 0,
-    avoid: 0,
-    unknown: 0,
-  }
-  for (const race of races) {
-    if (race.winningComboTier) {
-      tierDist[race.winningComboTier]++
-    } else {
-      tierDist['unknown']++
-    }
-  }
+  // Rank distribution of winning combos
+  const winRanks = races.map(r => r.winComboRank).filter(r => r > 0).sort((a, b) => a - b)
 
   return {
     totalRaces: races.length,
@@ -536,7 +497,13 @@ function generateSummary(cache: Cache) {
     },
     generatedAt: new Date().toISOString(),
     strategies: strategyAggs,
-    tierDistribution: tierDist,
+    winComboRankDistribution: winRanks.length > 0 ? {
+      min: winRanks[0],
+      p25: winRanks[Math.floor(winRanks.length * 0.25)],
+      median: winRanks[Math.floor(winRanks.length * 0.5)],
+      p75: winRanks[Math.floor(winRanks.length * 0.75)],
+      max: winRanks[winRanks.length - 1],
+    } : null,
     races,
   }
 }
@@ -648,7 +615,7 @@ async function main() {
         const hitStr =
           hitStrats.length > 0 ? `HIT [${hitStrats.join(', ')}]` : 'MISS'
         console.log(
-          `  ${race.venue}${race.raceNumber}R ${race.name}: ${result.trifectaCombo.join('-')} = ${result.trifectaPayout}yen [${result.winningComboTier || '?'}] ${hitStr}`
+          `  ${race.venue}${race.raceNumber}R ${race.name}: ${result.trifectaCombo.join('-')} = ${result.trifectaPayout}yen [rank ${result.winComboRank}] ${hitStr}`
         )
 
         saveCache(cache)
@@ -694,7 +661,7 @@ async function main() {
   // Print strategy results
   console.log('\n=== Strategy Performance ===')
   for (const s of summary.strategies) {
-    console.log(`\n${s.name} (${s.tiers.join('+')})`)
+    console.log(`\n${s.name} (Top ${s.n})`)
     console.log(`  Races: ${s.totalRaces}`)
     console.log(
       `  Hits: ${s.hits} / ${s.totalRaces} = ${(s.hitRate * 100).toFixed(1)}%`
@@ -705,15 +672,11 @@ async function main() {
     console.log(`  Avg combos/race: ${s.avgCombosPerRace.toFixed(1)}`)
   }
 
-  // Tier distribution
-  console.log('\n=== Winning Combo Tier Distribution ===')
-  const total = Object.keys(cache.processedRaces).length
-  for (const [tier, count] of Object.entries(summary.tierDistribution)) {
-    if ((count as number) > 0) {
-      console.log(
-        `  ${tier}: ${count} (${(((count as number) / total) * 100).toFixed(1)}%)`
-      )
-    }
+  // Rank distribution
+  if (summary.winComboRankDistribution) {
+    const rd = summary.winComboRankDistribution
+    console.log('\n=== Winning Combo Rank Distribution ===')
+    console.log(`  min: ${rd.min}, 25%: ${rd.p25}, median: ${rd.median}, 75%: ${rd.p75}, max: ${rd.max}`)
   }
 }
 
