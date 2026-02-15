@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Calculator, BookOpen, Lightbulb, FlaskConical } from 'lucide-react'
 
 const navItems = [
-  { href: '/', label: '買い目分析', icon: Calculator },
+  { href: '/analysis', label: '買い目分析', icon: Calculator },
   { href: '/explanation', label: '計算方法', icon: BookOpen },
   { href: '/insight', label: '考察', icon: Lightbulb },
   { href: '/backtest', label: '検証', icon: FlaskConical },
@@ -19,7 +19,7 @@ export function Navigation() {
       <div className="mx-auto max-w-4xl px-4">
         <div className="flex items-center justify-between h-12">
           <Link href="/" className="text-sm font-semibold text-slate-800">
-            3連複 買い目分析
+            3連複 確率構造分析
           </Link>
           <nav className="flex items-center gap-1">
             {navItems.map(({ href, label, icon: Icon }) => {

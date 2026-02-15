@@ -22,8 +22,8 @@ const notoSerif = Noto_Serif_JP({
 });
 
 export const metadata: Metadata = {
-  title: "3連複 買い目分析",
-  description: "競馬の3連複の買い目を分析し、推奨される組み合わせを提示するツール",
+  title: "3連複 確率構造分析",
+  description: "単勝・複勝オッズから3連複の的中確率を推定し、確率構造を可視化するツール",
 };
 
 interface RootLayoutProps {
